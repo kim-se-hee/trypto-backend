@@ -43,7 +43,8 @@ public class OrderController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponseDto<PlaceOrderResponse> createOrder(@Valid @RequestBody PlaceOrderRequest request) {
         Order order = placeOrderUseCase.placeOrder(request.toCommand());
-        return ApiResponseDto.created("주문이 처리되었습니다.", PlaceOrderResponse.from(order));
+        String message = order.isMarketOrder() ? "주문이 체결되었습니다." : "주문이 등록되었습니다.";
+        return ApiResponseDto.created(message, PlaceOrderResponse.from(order));
     }
 
     @GetMapping("/available")

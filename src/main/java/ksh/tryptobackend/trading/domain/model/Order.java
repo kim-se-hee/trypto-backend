@@ -174,6 +174,10 @@ public class Order {
         this.status = OrderStatus.CANCELLED;
     }
 
+    public boolean isMarketOrder() {
+        return this.orderType == OrderType.MARKET;
+    }
+
     public boolean isCancellable() {
         return this.status == OrderStatus.PENDING;
     }
