@@ -65,7 +65,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         if (command.side() == Side.BUY) {
             return placeMarketBuyOrder(command, exchangeCoin, exchange, currentPrice, feeRate, now);
         }
-        return placeMarketSellOrder(command, exchangeCoin, currentPrice, feeRate, now);
+        return placeMarketSellOrder(command, exchangeCoin, exchange, currentPrice, feeRate, now);
     }
 
     private Order placeMarketBuyOrder(PlaceOrderCommand command, ExchangeCoinData exchangeCoin,
@@ -88,7 +88,8 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     }
 
     private Order placeMarketSellOrder(PlaceOrderCommand command, ExchangeCoinData exchangeCoin,
-                                       BigDecimal currentPrice, BigDecimal feeRate, LocalDateTime now) {
+                                       ExchangeData exchange, BigDecimal currentPrice,
+                                       BigDecimal feeRate, LocalDateTime now) {
         BigDecimal available = walletBalancePort.getAvailableBalance(
                 command.walletId(), exchangeCoin.coinId());
         if (command.amount().compareTo(available) > 0) {
@@ -101,8 +102,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
         walletBalancePort.deductBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity());
 
-        ExchangeData exchange = exchangePort.findById(exchangeCoin.exchangeId())
-                .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
         walletBalancePort.addBalance(command.walletId(), exchange.baseCurrencyCoinId(),
                 order.getFilledAmount().subtract(order.getFee().getAmount()));
 
