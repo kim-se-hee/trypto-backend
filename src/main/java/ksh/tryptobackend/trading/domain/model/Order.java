@@ -53,6 +53,73 @@ public class Order {
         this.filledAt = filledAt;
     }
 
+    public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+                                             BigDecimal orderAmount, BigDecimal currentPrice, BigDecimal feeRate,
+                                             LocalDateTime now) {
+        BigDecimal quantity = calculateQuantity(orderAmount, currentPrice);
+        BigDecimal filledAmount = quantity.multiply(currentPrice);
+        Fee fee = Fee.calculate(filledAmount, feeRate);
+
+        return Order.builder()
+                .idempotencyKey(idempotencyKey)
+                .walletId(walletId)
+                .exchangeCoinId(exchangeCoinId)
+                .side(Side.BUY)
+                .orderType(OrderType.MARKET)
+                .orderAmount(filledAmount)
+                .quantity(quantity)
+                .filledPrice(currentPrice)
+                .fee(fee)
+                .status(OrderStatus.FILLED)
+                .createdAt(now)
+                .filledAt(now)
+                .build();
+    }
+
+    public static Order createMarketSellOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+                                              BigDecimal sellQuantity, BigDecimal currentPrice, BigDecimal feeRate,
+                                              LocalDateTime now) {
+        BigDecimal filledAmount = sellQuantity.multiply(currentPrice);
+        Fee fee = Fee.calculate(filledAmount, feeRate);
+
+        return Order.builder()
+                .idempotencyKey(idempotencyKey)
+                .walletId(walletId)
+                .exchangeCoinId(exchangeCoinId)
+                .side(Side.SELL)
+                .orderType(OrderType.MARKET)
+                .orderAmount(sellQuantity)
+                .quantity(sellQuantity)
+                .filledPrice(currentPrice)
+                .fee(fee)
+                .status(OrderStatus.FILLED)
+                .createdAt(now)
+                .filledAt(now)
+                .build();
+    }
+
+    public static Order reconstitute(Long id, UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+                                     Side side, OrderType orderType, BigDecimal orderAmount, BigDecimal quantity,
+                                     BigDecimal price, BigDecimal filledPrice, Fee fee, OrderStatus status,
+                                     LocalDateTime createdAt, LocalDateTime filledAt) {
+        return Order.builder()
+                .id(id)
+                .idempotencyKey(idempotencyKey)
+                .walletId(walletId)
+                .exchangeCoinId(exchangeCoinId)
+                .side(side)
+                .orderType(orderType)
+                .orderAmount(orderAmount)
+                .quantity(quantity)
+                .price(price)
+                .filledPrice(filledPrice)
+                .fee(fee)
+                .status(status)
+                .createdAt(createdAt)
+                .filledAt(filledAt)
+                .build();
+    }
+
     public BigDecimal getFilledAmount() {
         if (side == Side.BUY) {
             return quantity.multiply(filledPrice != null ? filledPrice : price);
