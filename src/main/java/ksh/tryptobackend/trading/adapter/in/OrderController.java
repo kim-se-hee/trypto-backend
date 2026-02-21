@@ -2,10 +2,14 @@ package ksh.tryptobackend.trading.adapter.in;
 
 import jakarta.validation.Valid;
 import ksh.tryptobackend.common.dto.response.ApiResponseDto;
+import ksh.tryptobackend.common.dto.response.CursorPageResponseDto;
+import ksh.tryptobackend.trading.adapter.in.dto.request.FindOrderHistoryRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.GetOrderAvailabilityRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.PlaceOrderRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.response.OrderAvailabilityResponse;
+import ksh.tryptobackend.trading.adapter.in.dto.response.OrderHistoryResponse;
 import ksh.tryptobackend.trading.adapter.in.dto.response.PlaceOrderResponse;
+import ksh.tryptobackend.trading.application.port.in.FindOrderHistoryUseCase;
 import ksh.tryptobackend.trading.application.port.in.GetOrderAvailabilityUseCase;
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
 import ksh.tryptobackend.trading.domain.model.Order;
@@ -26,6 +30,7 @@ public class OrderController {
 
     private final PlaceOrderUseCase placeOrderUseCase;
     private final GetOrderAvailabilityUseCase getOrderAvailabilityUseCase;
+    private final FindOrderHistoryUseCase findOrderHistoryUseCase;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -37,6 +42,12 @@ public class OrderController {
     @GetMapping("/available")
     public ApiResponseDto<OrderAvailabilityResponse> getAvailability(@Valid @ModelAttribute GetOrderAvailabilityRequest request) {
         OrderAvailabilityResponse response = getOrderAvailabilityUseCase.getAvailability(request.toQuery());
+        return ApiResponseDto.success("조회 성공", response);
+    }
+
+    @GetMapping
+    public ApiResponseDto<CursorPageResponseDto<OrderHistoryResponse>> findOrderHistory(@Valid @ModelAttribute FindOrderHistoryRequest request) {
+        CursorPageResponseDto<OrderHistoryResponse> response = findOrderHistoryUseCase.findOrderHistory(request.toQuery());
         return ApiResponseDto.success("조회 성공", response);
     }
 }
