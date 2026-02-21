@@ -95,28 +95,28 @@ public class OrderStepDef {
     public void 시장가_매수_주문을_원으로_요청한다(long amount) {
         Map<String, Object> body = createOrderBody("BUY", "MARKET", amount, null);
         apiClient.post("/api/orders", body);
-        extractOrderId();
+        extractOrderIdIfSuccess();
     }
 
     @만일("시장가 매도 주문을 {double}개로 요청한다")
     public void 시장가_매도_주문을_개로_요청한다(double amount) {
         Map<String, Object> body = createOrderBody("SELL", "MARKET", amount, null);
         apiClient.post("/api/orders", body);
-        extractOrderId();
+        extractOrderIdIfSuccess();
     }
 
     @만일("지정가 매수 주문을 {long}원에 가격 {long}원으로 요청한다")
     public void 지정가_매수_주문을_원에_가격_원으로_요청한다(long amount, long price) {
         Map<String, Object> body = createOrderBody("BUY", "LIMIT", amount, price);
         apiClient.post("/api/orders", body);
-        extractOrderId();
+        extractOrderIdIfSuccess();
     }
 
     @만일("지정가 매도 주문을 {double}개에 가격 {long}원으로 요청한다")
     public void 지정가_매도_주문을_개에_가격_원으로_요청한다(double amount, long price) {
         Map<String, Object> body = createOrderBody("SELL", "LIMIT", amount, price);
         apiClient.post("/api/orders", body);
-        extractOrderId();
+        extractOrderIdIfSuccess();
     }
 
     @만일("동일한 idempotencyKey로 시장가 매수 주문을 {long}원으로 {int}번 요청한다")
@@ -131,11 +131,11 @@ public class OrderStepDef {
             body.put("orderType", "MARKET");
             body.put("amount", amount);
             apiClient.post("/api/orders", body);
+            extractOrderIdIfSuccess();
             if (i == 0) {
-                firstOrderId = extractOrderIdFromResponse();
+                firstOrderId = lastOrderId;
             }
         }
-        lastOrderId = extractOrderIdFromResponse();
     }
 
     @만일("매수 주문 가능 정보를 조회한다")
@@ -212,25 +212,16 @@ public class OrderStepDef {
         return body;
     }
 
-    private void extractOrderId() {
-        lastOrderId = extractOrderIdFromResponse();
+    @SuppressWarnings("unchecked")
+    private void extractOrderIdIfSuccess() {
+        Map<String, Object> body = apiClient.getLastResponse()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        Map<String, Object> data = (Map<String, Object>) body.get("data");
+        if (data != null && data.get("orderId") instanceof Number num) {
+            lastOrderId = num.longValue();
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private Long extractOrderIdFromResponse() {
-        try {
-            Map<String, Object> body = apiClient.getLastResponse()
-                    .expectBody(Map.class)
-                    .returnResult()
-                    .getResponseBody();
-            if (body != null && body.get("data") instanceof Map<?, ?> data) {
-                Object orderId = data.get("orderId");
-                if (orderId instanceof Number num) {
-                    return num.longValue();
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
 }
