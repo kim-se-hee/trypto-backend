@@ -12,6 +12,7 @@ import ksh.tryptobackend.trading.application.port.out.LivePricePort;
 import ksh.tryptobackend.trading.application.port.out.OrderPersistencePort;
 import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
 import ksh.tryptobackend.trading.domain.model.Order;
+import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,6 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class PlaceOrderService implements PlaceOrderUseCase {
-
-    private static final Long KRW_COIN_ID = 1L;
-    private static final BigDecimal KRW_MIN_ORDER = new BigDecimal("5000");
-    private static final BigDecimal KRW_MAX_ORDER = new BigDecimal("1000000000");
-    private static final BigDecimal USDT_MIN_ORDER = new BigDecimal("5");
 
     private final OrderPersistencePort orderPersistencePort;
     private final WalletBalancePort walletBalancePort;
@@ -50,7 +46,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         ExchangeData exchange = exchangePort.findById(exchangeCoin.exchangeId())
                 .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
 
-        validateOrderAmount(command, exchange.baseCurrencyCoinId());
+        validateOrderAmount(command, exchange.baseCurrencySymbol());
         validateLimitPrice(command);
 
         BigDecimal feeRate = exchange.feeRate();
@@ -155,22 +151,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         return orderPersistencePort.save(order);
     }
 
-    private void validateOrderAmount(PlaceOrderCommand command, Long baseCurrencyCoinId) {
-        BigDecimal amount = command.amount();
-
+    private void validateOrderAmount(PlaceOrderCommand command, String baseCurrencySymbol) {
         if (command.side() == Side.BUY) {
-            if (baseCurrencyCoinId.equals(KRW_COIN_ID)) {
-                if (amount.compareTo(KRW_MIN_ORDER) < 0) {
-                    throw new CustomException(ErrorCode.BELOW_MIN_ORDER_AMOUNT);
-                }
-                if (amount.compareTo(KRW_MAX_ORDER) > 0) {
-                    throw new CustomException(ErrorCode.ABOVE_MAX_ORDER_AMOUNT);
-                }
-            } else {
-                if (amount.compareTo(USDT_MIN_ORDER) < 0) {
-                    throw new CustomException(ErrorCode.BELOW_MIN_ORDER_AMOUNT);
-                }
-            }
+            OrderAmountPolicy.of(baseCurrencySymbol).validate(command.amount());
         }
     }
 

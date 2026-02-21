@@ -68,7 +68,7 @@ public class OrderStepDef {
 
     @먼저("업비트 거래소가 등록되어 있다")
     public void 업비트_거래소가_등록되어_있다() {
-        exchangeAdapter.addExchange(new ExchangeData(EXCHANGE_ID, new BigDecimal("0.0005"), KRW_COIN_ID));
+        exchangeAdapter.addExchange(new ExchangeData(EXCHANGE_ID, new BigDecimal("0.0005"), KRW_COIN_ID, "KRW"));
     }
 
     @그리고("업비트에 BTC가 상장되어 있다")

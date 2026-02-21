@@ -9,7 +9,8 @@ public interface ExchangePort {
     record ExchangeData(
             Long exchangeId,
             java.math.BigDecimal feeRate,
-            Long baseCurrencyCoinId
+            Long baseCurrencyCoinId,
+            String baseCurrencySymbol
     ) {
     }
 }
