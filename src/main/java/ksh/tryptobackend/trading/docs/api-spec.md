@@ -1,7 +1,7 @@
 # API 명세 — CEX 주문 (Trading)
 
 > 업비트·빗썸·바이낸스 공통. 단일 API로 모든 CEX 거래소의 시장가/지정가 주문을 처리한다.
-> 상세 계산 로직과 비즈니스 규칙은 `/docs/business-rules.md`를 참고한다.
+> 상세 계산 로직과 비즈니스 규칙은 `business-rules.md`를 참고한다.
 
 ## 공통 사항
 
