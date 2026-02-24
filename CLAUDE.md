@@ -303,6 +303,10 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 
 # 테스트 전략
 
+**테스트 컨테이너**
+- Testcontainers 싱글톤 패턴을 사용한다. 추상 클래스의 static 블록에서 컨테이너를 한 번만 띄우고, 테스트 클래스가 이를 상속한다
+- 테스트 클래스마다 컨테이너를 새로 생성하지 않는다
+
 **인수 테스트**
 - Cucumber를 이용하여 사용자 시나리오가 정상 작동하는지 검증한다
 - 모든 사용자 시나리오에 대해서 인수 테스트를 진행한다
@@ -322,6 +326,8 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 공통: Given-When-Then 패턴을 따른다
 - 인수 테스트: `.feature` 파일에 Gherkin 문법(한국어)으로 시나리오를 작성하고 Step Definition에서 실제 API를 호출한다
 - Step Definition 애노테이션은 `io.cucumber.java.en` 패키지의 `@Given`, `@When`, `@Then`을 사용한다. 한글 애노테이션(`@먼저`, `@만일`, `@그러면`, `@그리고`) 사용 금지
+- 테스트 간 격리를 위해 Cucumber `@Before`에서 데이터를 정리한다
+- 테스트 데이터 정리 시 `deleteAll()` 대신 `deleteAllInBatch()`를 사용한다. 라이프사이클 콜백 없이 단일 DELETE 쿼리로 빠르게 정리된다
 - 단위 테스트: `@DisplayName`에 한국어 설명을 작성하고 메서드명은 `methodName_condition_result` 패턴을 따른다
 
 ---
