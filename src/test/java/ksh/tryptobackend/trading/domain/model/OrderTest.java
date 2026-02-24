@@ -93,7 +93,7 @@ class OrderTest {
             Order order = Order.createLimitBuyOrder(
                 UUID.randomUUID(), 1L, 1L,
                 new BigDecimal("500000"), new BigDecimal("100000000"),
-                new BigDecimal("0.0005"), LocalDateTime.now());
+                new BigDecimal("0.0005"), "KRW", LocalDateTime.now());
 
             order.cancel();
 
@@ -106,7 +106,7 @@ class OrderTest {
             Order order = Order.createMarketBuyOrder(
                 UUID.randomUUID(), 1L, 1L,
                 new BigDecimal("100000"), new BigDecimal("100274000"),
-                new BigDecimal("0.0005"), LocalDateTime.now());
+                new BigDecimal("0.0005"), "KRW", LocalDateTime.now());
 
             assertThatThrownBy(order::cancel)
                 .isInstanceOf(CustomException.class);
@@ -118,7 +118,7 @@ class OrderTest {
             Order order = Order.createLimitBuyOrder(
                 UUID.randomUUID(), 1L, 1L,
                 new BigDecimal("500000"), new BigDecimal("100000000"),
-                new BigDecimal("0.0005"), LocalDateTime.now());
+                new BigDecimal("0.0005"), "KRW", LocalDateTime.now());
 
             order.cancel();
             order.cancel();

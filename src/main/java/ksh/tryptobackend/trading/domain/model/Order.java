@@ -3,6 +3,7 @@ package ksh.tryptobackend.trading.domain.model;
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
@@ -35,7 +36,8 @@ public class Order {
 
     public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal orderAmount, BigDecimal currentPrice, BigDecimal feeRate,
-                                             LocalDateTime now) {
+                                             String baseCurrencySymbol, LocalDateTime now) {
+        OrderAmountPolicy.of(baseCurrencySymbol).validate(orderAmount);
         Quantity quantity = Quantity.fromDivision(orderAmount, currentPrice);
         BigDecimal filledAmount = quantity.value().multiply(currentPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
@@ -56,8 +58,9 @@ public class Order {
 
     public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                             BigDecimal orderAmount, BigDecimal limitPrice, BigDecimal feeRate,
-                                            LocalDateTime now) {
+                                            String baseCurrencySymbol, LocalDateTime now) {
         validateLimitPrice(limitPrice);
+        OrderAmountPolicy.of(baseCurrencySymbol).validate(orderAmount);
         Quantity quantity = Quantity.fromDivision(orderAmount, limitPrice);
         BigDecimal filledAmount = quantity.value().multiply(limitPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);

@@ -8,7 +8,6 @@ import ksh.tryptobackend.trading.application.port.out.*;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort.ExchangeCoinData;
 import ksh.tryptobackend.trading.application.port.out.ExchangePort.ExchangeData;
 import ksh.tryptobackend.trading.domain.model.Order;
-import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +43,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         ExchangeData exchange = exchangePort.findById(exchangeCoin.exchangeId())
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
 
-        validateOrderAmount(command, exchange.baseCurrencySymbol());
-
         BigDecimal feeRate = exchange.feeRate();
         LocalDateTime now = LocalDateTime.now(clock);
 
@@ -70,7 +67,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
                                       BigDecimal feeRate, LocalDateTime now) {
         Order order = Order.createMarketBuyOrder(
             command.idempotencyKey(), command.walletId(), command.exchangeCoinId(),
-            command.amount(), currentPrice, feeRate, now);
+            command.amount(), currentPrice, feeRate, exchange.baseCurrencySymbol(), now);
 
         BigDecimal available = walletBalancePort.getAvailableBalance(
             command.walletId(), exchange.baseCurrencyCoinId());
@@ -117,7 +114,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
                                      BigDecimal feeRate, LocalDateTime now) {
         Order order = Order.createLimitBuyOrder(
             command.idempotencyKey(), command.walletId(), command.exchangeCoinId(),
-            command.amount(), command.price(), feeRate, now);
+            command.amount(), command.price(), feeRate, exchange.baseCurrencySymbol(), now);
 
         BigDecimal available = walletBalancePort.getAvailableBalance(
             command.walletId(), exchange.baseCurrencyCoinId());
@@ -145,11 +142,5 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         walletBalancePort.lockBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity().value());
 
         return orderPersistencePort.save(order);
-    }
-
-    private void validateOrderAmount(PlaceOrderCommand command, String baseCurrencySymbol) {
-        if (command.side() == Side.BUY) {
-            OrderAmountPolicy.of(baseCurrencySymbol).validate(command.amount());
-        }
     }
 }
