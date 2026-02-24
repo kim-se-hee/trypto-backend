@@ -25,7 +25,7 @@ public class Order {
     private final Long exchangeCoinId;
     private final Side side;
     private final OrderType orderType;
-    private BigDecimal orderAmount;
+    private BigDecimal amount;
     private final Quantity quantity;
     private final BigDecimal price;
     private BigDecimal filledPrice;
@@ -35,10 +35,10 @@ public class Order {
     private LocalDateTime filledAt;
 
     public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
-                                             BigDecimal orderAmount, BigDecimal currentPrice, BigDecimal feeRate,
+                                             BigDecimal amount, BigDecimal currentPrice, BigDecimal feeRate,
                                              String baseCurrencySymbol, LocalDateTime now) {
-        OrderAmountPolicy.of(baseCurrencySymbol).validate(orderAmount);
-        Quantity quantity = Quantity.fromDivision(orderAmount, currentPrice);
+        OrderAmountPolicy.of(baseCurrencySymbol).validate(amount);
+        Quantity quantity = Quantity.fromDivision(amount, currentPrice);
         BigDecimal filledAmount = quantity.value().multiply(currentPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
@@ -57,11 +57,11 @@ public class Order {
     }
 
     public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
-                                            BigDecimal orderAmount, BigDecimal limitPrice, BigDecimal feeRate,
+                                            BigDecimal amount, BigDecimal limitPrice, BigDecimal feeRate,
                                             String baseCurrencySymbol, LocalDateTime now) {
         validateLimitPrice(limitPrice);
-        OrderAmountPolicy.of(baseCurrencySymbol).validate(orderAmount);
-        Quantity quantity = Quantity.fromDivision(orderAmount, limitPrice);
+        OrderAmountPolicy.of(baseCurrencySymbol).validate(amount);
+        Quantity quantity = Quantity.fromDivision(amount, limitPrice);
         BigDecimal filledAmount = quantity.value().multiply(limitPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
@@ -81,7 +81,7 @@ public class Order {
     }
 
     public static Order reconstitute(Long id, UUID idempotencyKey, Long walletId, Long exchangeCoinId,
-                                     Side side, OrderType orderType, BigDecimal orderAmount, Quantity quantity,
+                                     Side side, OrderType orderType, BigDecimal amount, Quantity quantity,
                                      BigDecimal price, BigDecimal filledPrice, Fee fee, OrderStatus status,
                                      LocalDateTime createdAt, LocalDateTime filledAt) {
         return Order.builder()
@@ -91,7 +91,7 @@ public class Order {
             .exchangeCoinId(exchangeCoinId)
             .side(side)
             .orderType(orderType)
-            .orderAmount(orderAmount)
+            .amount(amount)
             .quantity(quantity)
             .price(price)
             .filledPrice(filledPrice)
@@ -140,7 +140,7 @@ public class Order {
     }
 
     private static Order createOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
-                                     Side side, OrderType orderType, BigDecimal orderAmount,
+                                     Side side, OrderType orderType, BigDecimal amount,
                                      Quantity quantity, BigDecimal price, BigDecimal filledPrice,
                                      Fee fee, LocalDateTime now) {
         return Order.builder()
@@ -149,7 +149,7 @@ public class Order {
             .exchangeCoinId(exchangeCoinId)
             .side(side)
             .orderType(orderType)
-            .orderAmount(orderAmount)
+            .amount(amount)
             .quantity(quantity)
             .price(price)
             .filledPrice(filledPrice)

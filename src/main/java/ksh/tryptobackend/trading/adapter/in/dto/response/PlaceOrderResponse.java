@@ -27,7 +27,7 @@ public record PlaceOrderResponse(
             order.getId(),
             order.getSide(),
             order.getOrderType(),
-            order.getOrderAmount(),
+            order.getAmount(),
             order.getQuantity().value(),
             order.getPrice(),
             order.getFilledPrice(),

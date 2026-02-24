@@ -44,7 +44,7 @@ public class OrderJpaEntity {
     private Side side;
 
     @Column(name = "order_amount", nullable = false, precision = 30, scale = 8)
-    private BigDecimal orderAmount;
+    private BigDecimal amount;
 
     @Column(name = "quantity", nullable = false, precision = 30, scale = 8)
     private BigDecimal quantity;
@@ -79,7 +79,7 @@ public class OrderJpaEntity {
         entity.exchangeCoinId = order.getExchangeCoinId();
         entity.orderType = order.getOrderType();
         entity.side = order.getSide();
-        entity.orderAmount = order.getOrderAmount();
+        entity.amount = order.getAmount();
         entity.quantity = order.getQuantity().value();
         entity.price = order.getPrice();
         entity.filledPrice = order.getFilledPrice();
@@ -95,7 +95,7 @@ public class OrderJpaEntity {
         Fee domainFee = (fee != null && feeRate != null) ? Fee.of(fee, feeRate) : null;
         return Order.reconstitute(
             id, idempotencyKey, walletId, exchangeCoinId,
-            side, orderType, orderAmount, new Quantity(quantity),
+            side, orderType, amount, new Quantity(quantity),
             price, filledPrice, domainFee, status,
             createdAt, filledAt
         );
