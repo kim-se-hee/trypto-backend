@@ -1,12 +1,12 @@
 package ksh.tryptobackend.acceptance;
 
-import ksh.tryptobackend.acceptance.mock.MockExchangeAdapter;
 import ksh.tryptobackend.acceptance.mock.MockExchangeCoinAdapter;
 import ksh.tryptobackend.acceptance.mock.MockLivePriceAdapter;
+import ksh.tryptobackend.acceptance.mock.MockTradingVenueAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort;
-import ksh.tryptobackend.trading.application.port.out.ExchangePort;
 import ksh.tryptobackend.trading.application.port.out.LivePricePort;
+import ksh.tryptobackend.trading.application.port.out.TradingVenuePort;
 import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -29,8 +29,8 @@ public class MockAdapterConfiguration {
 
     @Bean
     @Primary
-    public ExchangePort exchangePort() {
-        return new MockExchangeAdapter();
+    public TradingVenuePort tradingVenuePort() {
+        return new MockTradingVenueAdapter();
     }
 
     @Bean

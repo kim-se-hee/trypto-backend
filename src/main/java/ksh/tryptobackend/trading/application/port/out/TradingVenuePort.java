@@ -3,11 +3,11 @@ package ksh.tryptobackend.trading.application.port.out;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-public interface ExchangePort {
+public interface TradingVenuePort {
 
-    Optional<ExchangeData> findById(Long exchangeId);
+    Optional<TradingVenue> findByExchangeId(Long exchangeId);
 
-    record ExchangeData(
+    record TradingVenue(
         Long exchangeId,
         BigDecimal feeRate,
         Long baseCurrencyCoinId,
