@@ -146,8 +146,8 @@
     "orderAmount": 500000,
     "quantity": 0.005,
     "price": 100000000,
-    "filledPrice": null,
-    "fee": null,
+    "filledPrice": 100000000,
+    "fee": 250,
     "status": "PENDING",
     "createdAt": "2026-02-21T14:31:00",
     "filledAt": null
@@ -283,11 +283,11 @@
         "exchangeCoinId": 3,
         "side": "BUY",
         "orderType": "LIMIT",
-        "filledPrice": null,
+        "filledPrice": 100000000,
         "price": 100000000,
         "quantity": 0.005,
         "orderAmount": 500000,
-        "fee": null,
+        "fee": 250,
         "createdAt": "2026-02-21T14:31:00",
         "filledAt": null
       }
