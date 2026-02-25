@@ -36,12 +36,10 @@ public class GetOrderAvailabilityService implements GetOrderAvailabilityUseCase 
         TradingVenue venue = tradingVenuePort.findByExchangeId(exchangeCoin.exchangeId())
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
 
-        BigDecimal available;
-        if (query.side() == Side.BUY) {
-            available = walletBalancePort.getAvailableBalance(query.walletId(), venue.baseCurrencyCoinId());
-        } else {
-            available = walletBalancePort.getAvailableBalance(query.walletId(), exchangeCoin.coinId());
-        }
+        Long targetCoinId = query.side() == Side.BUY
+            ? venue.baseCurrencyCoinId()
+            : exchangeCoin.coinId();
+        BigDecimal available = walletBalancePort.getAvailableBalance(query.walletId(), targetCoinId);
 
         BigDecimal currentPrice = livePricePort.getCurrentPrice(query.exchangeCoinId());
 
