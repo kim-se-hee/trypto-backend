@@ -249,14 +249,5 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 
 작업에 필요한 상세 문서는 아래 경로에 있다. 필요할 때 참조한다.
 
-| 문서 | 경로 | 용도 |
-|------|------|------|
-| 아키텍처 | `docs/architecture.md` | 헥사고날 구조, 패키지 트리, 계층별 규약 |
-| 테스트 전략 | `docs/testing.md` | Cucumber 인수 테스트, 단위 테스트 규칙 |
-| 데이터 모델 | `docs/data-model.md` | Aggregate 구조, 모듈 간 의존 |
-| ERD | `docs/schema.md` | MySQL 테이블 구조, 관계 |
-| Trading 비즈니스 규칙 | `docs/trading/business-rules.md` | CEX 주문, DEX 스왑 규칙 |
-| Trading API 명세 | `docs/trading/api-spec.md` | CEX 주문 API |
-| Wallet 비즈니스 규칙 | `docs/wallet/business-rules.md` | 송금 규칙 |
-| InvestmentRound 비즈니스 규칙 | `docs/investmentround/business-rules.md` | 투자 라운드, 투자 원칙 |
-| Portfolio 비즈니스 규칙 | `docs/portfolio/business-rules.md` | 랭킹, 포트폴리오 열람 |
+- 공통: `docs/architecture.md`, `docs/testing.md`, `docs/data-model.md`, `docs/schema.md`
+- 도메인별: `docs/{domain}/{기능}.md` (예: `docs/trading/cex-order.md`)
