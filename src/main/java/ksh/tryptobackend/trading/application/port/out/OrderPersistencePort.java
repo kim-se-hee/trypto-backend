@@ -6,7 +6,6 @@ import ksh.tryptobackend.trading.domain.vo.Side;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface OrderPersistencePort {
 
@@ -14,7 +13,7 @@ public interface OrderPersistencePort {
 
     Optional<Order> findById(Long orderId);
 
-    Optional<Order> findByIdempotencyKey(UUID idempotencyKey);
+    Optional<Order> findByIdempotencyKey(String idempotencyKey);
 
     List<Order> findByCursor(Long walletId, Long exchangeCoinId, Side side,
                              OrderStatus status, Long cursorOrderId, int size);

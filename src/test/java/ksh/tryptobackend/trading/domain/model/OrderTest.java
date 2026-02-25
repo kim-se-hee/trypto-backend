@@ -72,7 +72,7 @@ class OrderTest {
             BigDecimal currentPrice = new BigDecimal("100274000");
 
             Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 orderAmount, currentPrice, DOMESTIC_VENUE, LocalDateTime.now());
 
             BigDecimal expectedAmount = order.getQuantity().value().multiply(currentPrice);
@@ -86,7 +86,7 @@ class OrderTest {
             BigDecimal currentPrice = new BigDecimal("100274000");
 
             Order order = Order.createMarketSellOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 sellQuantity, currentPrice, DOMESTIC_VENUE, LocalDateTime.now());
 
             BigDecimal expectedAmount = sellQuantity.multiply(currentPrice);
@@ -100,7 +100,7 @@ class OrderTest {
             BigDecimal limitPrice = new BigDecimal("100000000");
 
             Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 orderAmount, limitPrice, DOMESTIC_VENUE, LocalDateTime.now());
 
             BigDecimal expectedAmount = order.getQuantity().value().multiply(limitPrice);
@@ -114,7 +114,7 @@ class OrderTest {
             BigDecimal limitPrice = new BigDecimal("110000000");
 
             Order order = Order.createLimitSellOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 sellQuantity, limitPrice, DOMESTIC_VENUE, LocalDateTime.now());
 
             BigDecimal expectedAmount = sellQuantity.multiply(limitPrice);
@@ -157,7 +157,7 @@ class OrderTest {
         @DisplayName("PENDING 주문 취소 성공")
         void cancel_pendingOrder_cancelledSuccessfully() {
             Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 new BigDecimal("500000"), new BigDecimal("100000000"),
                 DOMESTIC_VENUE, LocalDateTime.now());
 
@@ -170,7 +170,7 @@ class OrderTest {
         @DisplayName("FILLED 주문 취소 시도 — 예외 발생")
         void cancel_filledOrder_throwsException() {
             Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 new BigDecimal("100000"), new BigDecimal("100274000"),
                 DOMESTIC_VENUE, LocalDateTime.now());
 
@@ -182,7 +182,7 @@ class OrderTest {
         @DisplayName("이미 취소된 주문 재취소 — 멱등성 보장")
         void cancel_alreadyCancelled_idempotent() {
             Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID(), 1L, 1L,
+                UUID.randomUUID().toString(), 1L, 1L,
                 new BigDecimal("500000"), new BigDecimal("100000000"),
                 DOMESTIC_VENUE, LocalDateTime.now());
 

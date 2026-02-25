@@ -13,14 +13,13 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Builder(access = lombok.AccessLevel.PRIVATE)
 public class Order {
 
     private final Long id;
-    private final UUID idempotencyKey;
+    private final String idempotencyKey;
     private final Long walletId;
     private final Long exchangeCoinId;
     private final Side side;
@@ -34,7 +33,7 @@ public class Order {
     private final LocalDateTime createdAt;
     private LocalDateTime filledAt;
 
-    public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    public static Order createMarketBuyOrder(String idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal amount, BigDecimal currentPrice, TradingVenue venue,
                                              LocalDateTime now) {
         venue.validateOrderAmount(amount);
@@ -46,7 +45,7 @@ public class Order {
             Side.BUY, OrderType.MARKET, filledAmount, quantity, null, currentPrice, fee, now);
     }
 
-    public static Order createMarketSellOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    public static Order createMarketSellOrder(String idempotencyKey, Long walletId, Long exchangeCoinId,
                                               BigDecimal sellQuantity, BigDecimal currentPrice, TradingVenue venue,
                                               LocalDateTime now) {
         BigDecimal filledAmount = sellQuantity.multiply(currentPrice);
@@ -56,7 +55,7 @@ public class Order {
             Side.SELL, OrderType.MARKET, filledAmount, new Quantity(sellQuantity), null, currentPrice, fee, now);
     }
 
-    public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    public static Order createLimitBuyOrder(String idempotencyKey, Long walletId, Long exchangeCoinId,
                                             BigDecimal amount, BigDecimal limitPrice, TradingVenue venue,
                                             LocalDateTime now) {
         if (limitPrice == null) {
@@ -71,7 +70,7 @@ public class Order {
             Side.BUY, OrderType.LIMIT, filledAmount, quantity, limitPrice, limitPrice, fee, now);
     }
 
-    public static Order createLimitSellOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    public static Order createLimitSellOrder(String idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal sellQuantity, BigDecimal limitPrice, TradingVenue venue,
                                              LocalDateTime now) {
         if (limitPrice == null) {
@@ -84,7 +83,7 @@ public class Order {
             Side.SELL, OrderType.LIMIT, filledAmount, new Quantity(sellQuantity), limitPrice, limitPrice, fee, now);
     }
 
-    public static Order reconstitute(Long id, UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    public static Order reconstitute(Long id, String idempotencyKey, Long walletId, Long exchangeCoinId,
                                      Side side, OrderType orderType, BigDecimal amount, Quantity quantity,
                                      BigDecimal price, BigDecimal filledPrice, Fee fee, OrderStatus status,
                                      LocalDateTime createdAt, LocalDateTime filledAt) {
@@ -137,7 +136,7 @@ public class Order {
         return getFilledAmount().add(fee.amount());
     }
 
-    private static Order createOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
+    private static Order createOrder(String idempotencyKey, Long walletId, Long exchangeCoinId,
                                      Side side, OrderType orderType, BigDecimal amount,
                                      Quantity quantity, BigDecimal price, BigDecimal filledPrice,
                                      Fee fee, LocalDateTime now) {

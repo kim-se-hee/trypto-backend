@@ -39,13 +39,13 @@
 
 ### 멱등성
 
-클라이언트가 `clientOrderId`(UUID)를 생성하여 전송한다. 서버는 동일한 `clientOrderId`로 중복 요청이 들어오면 기존 주문 결과를 반환하고 새 주문을 생성하지 않는다.
+클라이언트가 `clientOrderId`(String)를 생성하여 전송한다. 서버는 동일한 `clientOrderId`로 중복 요청이 들어오면 기존 주문 결과를 반환하고 새 주문을 생성하지 않는다.
 
 ### Request Body
 
 | 필드             | 타입         | 필수  | 설명                              |
 |----------------|------------|-----|---------------------------------|
-| clientOrderId  | UUID       | O   | 멱등성 키 (클라이언트 생성)                |
+| clientOrderId  | String     | O   | 멱등성 키 (클라이언트 생성)                |
 | walletId       | Long       | O   | 주문 지갑 ID                        |
 | exchangeCoinId | Long       | O   | 거래소-코인 ID                       |
 | side           | String     | O   | `BUY` \| `SELL`                 |

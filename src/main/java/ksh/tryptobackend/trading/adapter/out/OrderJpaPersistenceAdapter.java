@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +33,7 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort {
     }
 
     @Override
-    public Optional<Order> findByIdempotencyKey(UUID idempotencyKey) {
+    public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
         return orderJpaRepository.findByIdempotencyKey(idempotencyKey)
             .map(OrderJpaEntity::toDomain);
     }

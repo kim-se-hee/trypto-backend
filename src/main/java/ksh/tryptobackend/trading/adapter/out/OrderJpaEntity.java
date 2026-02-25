@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "orders")
@@ -26,8 +25,8 @@ public class OrderJpaEntity {
     @Column(name = "order_id")
     private Long id;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
-    private UUID idempotencyKey;
+    @Column(name = "idempotency_key", nullable = false, unique = true, length = 64)
+    private String idempotencyKey;
 
     @Column(name = "wallet_id", nullable = false)
     private Long walletId;
