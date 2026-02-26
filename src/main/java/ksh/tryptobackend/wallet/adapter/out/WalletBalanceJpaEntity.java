@@ -1,7 +1,6 @@
 package ksh.tryptobackend.wallet.adapter.out;
 
 import jakarta.persistence.*;
-import ksh.tryptobackend.wallet.domain.model.WalletBalance;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,28 +30,28 @@ public class WalletBalanceJpaEntity {
     @Column(name = "locked", nullable = false, precision = 30, scale = 8)
     private BigDecimal locked;
 
-    public WalletBalance toDomain() {
-        return WalletBalance.builder()
-            .id(id)
-            .walletId(walletId)
-            .coinId(coinId)
-            .available(available)
-            .locked(locked)
-            .build();
+    public WalletBalanceJpaEntity(Long walletId, Long coinId, BigDecimal available, BigDecimal locked) {
+        this.walletId = walletId;
+        this.coinId = coinId;
+        this.available = available;
+        this.locked = locked;
     }
 
-    public static WalletBalanceJpaEntity fromDomain(WalletBalance domain) {
-        WalletBalanceJpaEntity entity = new WalletBalanceJpaEntity();
-        entity.id = domain.getId();
-        entity.walletId = domain.getWalletId();
-        entity.coinId = domain.getCoinId();
-        entity.available = domain.getAvailable();
-        entity.locked = domain.getLocked();
-        return entity;
+    public void deductAvailable(BigDecimal amount) {
+        this.available = available.subtract(amount);
     }
 
-    public void updateFrom(WalletBalance domain) {
-        this.available = domain.getAvailable();
-        this.locked = domain.getLocked();
+    public void addAvailable(BigDecimal amount) {
+        this.available = available.add(amount);
+    }
+
+    public void lock(BigDecimal amount) {
+        this.available = available.subtract(amount);
+        this.locked = locked.add(amount);
+    }
+
+    public void unlock(BigDecimal amount) {
+        this.locked = locked.subtract(amount);
+        this.available = available.add(amount);
     }
 }
