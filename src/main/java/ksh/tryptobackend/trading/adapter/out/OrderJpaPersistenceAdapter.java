@@ -61,6 +61,11 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort {
             .toList();
     }
 
+    @Override
+    public long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to) {
+        return orderJpaRepository.countByWalletIdAndCreatedAtBetween(walletId, from, to);
+    }
+
     private BooleanExpression exchangeCoinIdEq(QOrderJpaEntity order, Long exchangeCoinId) {
         return exchangeCoinId != null ? order.exchangeCoinId.eq(exchangeCoinId) : null;
     }
@@ -71,11 +76,6 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort {
 
     private BooleanExpression statusEq(QOrderJpaEntity order, OrderStatus status) {
         return status != null ? order.status.eq(status) : null;
-    }
-
-    @Override
-    public long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to) {
-        return orderJpaRepository.countByWalletIdAndCreatedAtBetween(walletId, from, to);
     }
 
     private BooleanExpression cursorLt(QOrderJpaEntity order, Long cursorOrderId) {
