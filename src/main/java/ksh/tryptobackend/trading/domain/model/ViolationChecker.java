@@ -11,10 +11,6 @@ import java.util.Optional;
 
 public class ViolationChecker {
 
-    private static final String CHASE_BUY_BAN = "CHASE_BUY_BAN";
-    private static final String AVERAGING_LIMIT = "AVERAGING_LIMIT";
-    private static final String OVERTRADING_LIMIT = "OVERTRADING_LIMIT";
-
     public static List<RuleViolation> check(Order order, List<InvestmentRuleData> rules,
                                             HoldingData holding, BigDecimal changeRate,
                                             BigDecimal currentPrice, long todayOrderCount,
@@ -33,7 +29,6 @@ public class ViolationChecker {
             case CHASE_BUY_BAN -> checkChaseBuyBan(order, rule, changeRate, now);
             case AVERAGING_LIMIT -> checkAveragingLimit(order, rule, holding, currentPrice, now);
             case OVERTRADING_LIMIT -> checkOvertradingLimit(rule, todayOrderCount, now);
-            default -> Optional.empty();
         };
     }
 
@@ -58,7 +53,7 @@ public class ViolationChecker {
         if (holding == null) {
             return Optional.empty();
         }
-        if (holding.avgBuyPrice().compareTo(currentPrice) <= 0) {
+        if (!holding.isAtLoss(currentPrice)) {
             return Optional.empty();
         }
         int newCount = holding.averagingDownCount() + 1;

@@ -8,15 +8,16 @@ import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.trading.domain.model.ViolationChecker;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class ViolationCheckService {
 
@@ -46,7 +47,7 @@ public class ViolationCheckService {
 
         LocalDate today = LocalDate.now(clock);
         long todayOrderCount = orderPersistencePort.countByWalletIdAndCreatedAtBetween(
-            walletId, today.atStartOfDay(), today.atTime(23, 59, 59));
+            walletId, today.atStartOfDay(), today.atTime(LocalTime.MAX));
 
         LocalDateTime now = LocalDateTime.now(clock);
         return ViolationChecker.check(order, rules, holding, changeRate, currentPrice,

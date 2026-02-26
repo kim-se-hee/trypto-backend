@@ -17,5 +17,8 @@ public interface HoldingPort {
         BigDecimal totalQuantity,
         int averagingDownCount
     ) {
+        public boolean isAtLoss(BigDecimal currentPrice) {
+            return avgBuyPrice.compareTo(currentPrice) > 0;
+        }
     }
 }

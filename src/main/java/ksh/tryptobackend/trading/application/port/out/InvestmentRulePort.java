@@ -1,5 +1,7 @@
 package ksh.tryptobackend.trading.application.port.out;
 
+import ksh.tryptobackend.trading.domain.vo.RuleType;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -9,7 +11,7 @@ public interface InvestmentRulePort {
 
     record InvestmentRuleData(
         Long ruleId,
-        String ruleType,
+        RuleType ruleType,
         BigDecimal thresholdValue
     ) {
     }
