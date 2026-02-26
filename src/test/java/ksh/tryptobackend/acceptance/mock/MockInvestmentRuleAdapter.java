@@ -1,6 +1,7 @@
 package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort;
+import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,14 +10,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MockInvestmentRuleAdapter implements InvestmentRulePort {
 
-    private final Map<Long, List<InvestmentRuleData>> rulesByRoundId = new ConcurrentHashMap<>();
+    private final Map<Long, List<InvestmentRule>> rulesByRoundId = new ConcurrentHashMap<>();
 
     @Override
-    public List<InvestmentRuleData> findByRoundId(Long roundId) {
+    public List<InvestmentRule> findByRoundId(Long roundId) {
         return rulesByRoundId.getOrDefault(roundId, List.of());
     }
 
-    public void addRule(Long roundId, InvestmentRuleData rule) {
+    public void addRule(Long roundId, InvestmentRule rule) {
         rulesByRoundId.computeIfAbsent(roundId, k -> new ArrayList<>()).add(rule);
     }
 

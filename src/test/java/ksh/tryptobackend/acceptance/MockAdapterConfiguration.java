@@ -10,7 +10,7 @@ import ksh.tryptobackend.acceptance.mock.MockViolationPersistenceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletInfoAdapter;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort;
-import ksh.tryptobackend.trading.application.port.out.HoldingPort;
+import ksh.tryptobackend.trading.application.port.out.HoldingPersistencePort;
 import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort;
 import ksh.tryptobackend.trading.application.port.out.LivePricePort;
 import ksh.tryptobackend.trading.application.port.out.PriceChangeRatePort;
@@ -51,7 +51,7 @@ public class MockAdapterConfiguration {
 
     @Bean
     @Primary
-    public HoldingPort holdingPort() {
+    public HoldingPersistencePort holdingPersistencePort() {
         return new MockHoldingAdapter();
     }
 

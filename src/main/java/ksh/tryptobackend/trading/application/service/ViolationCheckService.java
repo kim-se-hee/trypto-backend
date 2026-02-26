@@ -1,11 +1,11 @@
 package ksh.tryptobackend.trading.application.service;
 
 import ksh.tryptobackend.trading.application.port.out.*;
-import ksh.tryptobackend.trading.application.port.out.HoldingPort.HoldingData;
-import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort.InvestmentRuleData;
+import ksh.tryptobackend.trading.domain.model.Holding;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.trading.domain.model.ViolationChecker;
+import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class ViolationCheckService {
 
     private final WalletInfoPort walletInfoPort;
     private final InvestmentRulePort investmentRulePort;
-    private final HoldingPort holdingPort;
+    private final HoldingPersistencePort holdingPersistencePort;
     private final PriceChangeRatePort priceChangeRatePort;
     private final OrderPersistencePort orderPersistencePort;
     private final Clock clock;
@@ -32,12 +32,12 @@ public class ViolationCheckService {
                                                     Long exchangeCoinId, Long coinId,
                                                     BigDecimal currentPrice) {
         Long roundId = walletInfoPort.getRoundIdByWalletId(walletId);
-        List<InvestmentRuleData> rules = investmentRulePort.findByRoundId(roundId);
+        List<InvestmentRule> rules = investmentRulePort.findByRoundId(roundId);
         if (rules.isEmpty()) {
             return List.of();
         }
 
-        HoldingData holding = holdingPort.findByWalletIdAndCoinId(walletId, coinId)
+        Holding holding = holdingPersistencePort.findByWalletIdAndCoinId(walletId, coinId)
             .orElse(null);
 
         BigDecimal changeRate = BigDecimal.ZERO;

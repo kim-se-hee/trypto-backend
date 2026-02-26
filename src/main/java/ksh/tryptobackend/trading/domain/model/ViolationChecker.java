@@ -1,7 +1,6 @@
 package ksh.tryptobackend.trading.domain.model;
 
-import ksh.tryptobackend.trading.application.port.out.HoldingPort.HoldingData;
-import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort.InvestmentRuleData;
+import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
 import ksh.tryptobackend.trading.domain.vo.Side;
 
 import java.math.BigDecimal;
@@ -11,8 +10,8 @@ import java.util.Optional;
 
 public class ViolationChecker {
 
-    public static List<RuleViolation> check(Order order, List<InvestmentRuleData> rules,
-                                            HoldingData holding, BigDecimal changeRate,
+    public static List<RuleViolation> check(Order order, List<InvestmentRule> rules,
+                                            Holding holding, BigDecimal changeRate,
                                             BigDecimal currentPrice, long todayOrderCount,
                                             LocalDateTime now) {
         return rules.stream()
@@ -21,8 +20,8 @@ public class ViolationChecker {
             .toList();
     }
 
-    private static Optional<RuleViolation> checkRule(Order order, InvestmentRuleData rule,
-                                                     HoldingData holding, BigDecimal changeRate,
+    private static Optional<RuleViolation> checkRule(Order order, InvestmentRule rule,
+                                                     Holding holding, BigDecimal changeRate,
                                                      BigDecimal currentPrice, long todayOrderCount,
                                                      LocalDateTime now) {
         return switch (rule.ruleType()) {
@@ -32,7 +31,7 @@ public class ViolationChecker {
         };
     }
 
-    private static Optional<RuleViolation> checkChaseBuyBan(Order order, InvestmentRuleData rule,
+    private static Optional<RuleViolation> checkChaseBuyBan(Order order, InvestmentRule rule,
                                                             BigDecimal changeRate, LocalDateTime now) {
         if (order.getSide() != Side.BUY) {
             return Optional.empty();
@@ -44,8 +43,8 @@ public class ViolationChecker {
         return Optional.of(new RuleViolation(rule.ruleId(), reason, now));
     }
 
-    private static Optional<RuleViolation> checkAveragingLimit(Order order, InvestmentRuleData rule,
-                                                               HoldingData holding,
+    private static Optional<RuleViolation> checkAveragingLimit(Order order, InvestmentRule rule,
+                                                               Holding holding,
                                                                BigDecimal currentPrice, LocalDateTime now) {
         if (order.getSide() != Side.BUY) {
             return Optional.empty();
@@ -56,7 +55,7 @@ public class ViolationChecker {
         if (!holding.isAtLoss(currentPrice)) {
             return Optional.empty();
         }
-        int newCount = holding.averagingDownCount() + 1;
+        int newCount = holding.getAveragingDownCount() + 1;
         if (newCount < rule.thresholdValue().intValue()) {
             return Optional.empty();
         }
@@ -64,7 +63,7 @@ public class ViolationChecker {
         return Optional.of(new RuleViolation(rule.ruleId(), reason, now));
     }
 
-    private static Optional<RuleViolation> checkOvertradingLimit(InvestmentRuleData rule,
+    private static Optional<RuleViolation> checkOvertradingLimit(InvestmentRule rule,
                                                                  long todayOrderCount, LocalDateTime now) {
         long newCount = todayOrderCount + 1;
         if (newCount < rule.thresholdValue().longValue()) {

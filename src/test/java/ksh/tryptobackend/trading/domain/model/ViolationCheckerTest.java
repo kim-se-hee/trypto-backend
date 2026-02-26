@@ -1,7 +1,6 @@
 package ksh.tryptobackend.trading.domain.model;
 
-import ksh.tryptobackend.trading.application.port.out.HoldingPort.HoldingData;
-import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort.InvestmentRuleData;
+import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.RuleType;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
@@ -30,7 +29,7 @@ class ViolationCheckerTest {
         @DisplayName("매수 + 상승률 ≥ 설정값 → 위반")
         void buyWithHighChangeRate_violation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
+            InvestmentRule rule = new InvestmentRule(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
 
             List<RuleViolation> violations = ViolationChecker.check(
                 order, List.of(rule), null, new BigDecimal("5"), new BigDecimal("50000000"), 0, NOW);
@@ -43,7 +42,7 @@ class ViolationCheckerTest {
         @DisplayName("매수 + 상승률 < 설정값 → 위반 없음")
         void buyWithLowChangeRate_noViolation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
+            InvestmentRule rule = new InvestmentRule(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
 
             List<RuleViolation> violations = ViolationChecker.check(
                 order, List.of(rule), null, new BigDecimal("4.9"), new BigDecimal("50000000"), 0, NOW);
@@ -55,7 +54,7 @@ class ViolationCheckerTest {
         @DisplayName("매도 주문 → 추격 매수 체크 스킵")
         void sellOrder_skipped() {
             Order order = createSellOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
+            InvestmentRule rule = new InvestmentRule(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
 
             List<RuleViolation> violations = ViolationChecker.check(
                 order, List.of(rule), null, new BigDecimal("10"), new BigDecimal("50000000"), 0, NOW);
@@ -72,8 +71,8 @@ class ViolationCheckerTest {
         @DisplayName("매수 + 손실 중 + 물타기 횟수 ≥ 설정값 → 위반")
         void buyAtLossExceedingLimit_violation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3"));
-            HoldingData holding = new HoldingData(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
+            InvestmentRule rule = new InvestmentRule(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3"));
+            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
 
             // 현재가 50000000 < 평균 매수가 60000000 → 손실 중, 새 카운트 = 2 + 1 = 3 ≥ 3
             List<RuleViolation> violations = ViolationChecker.check(
@@ -87,8 +86,8 @@ class ViolationCheckerTest {
         @DisplayName("매수 + 손실 중 + 물타기 횟수 < 설정값 → 위반 없음")
         void buyAtLossBelowLimit_noViolation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3"));
-            HoldingData holding = new HoldingData(new BigDecimal("60000000"), new BigDecimal("0.01"), 1);
+            InvestmentRule rule = new InvestmentRule(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3"));
+            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 1);
 
             // 새 카운트 = 1 + 1 = 2 < 3
             List<RuleViolation> violations = ViolationChecker.check(
@@ -101,8 +100,8 @@ class ViolationCheckerTest {
         @DisplayName("매수 + 이익 중 → 물타기 아님")
         void buyAtProfit_noViolation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("1"));
-            HoldingData holding = new HoldingData(new BigDecimal("40000000"), new BigDecimal("0.01"), 5);
+            InvestmentRule rule = new InvestmentRule(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("1"));
+            Holding holding = createHolding(new BigDecimal("40000000"), new BigDecimal("0.01"), 5);
 
             // 현재가 50000000 > 평균 매수가 40000000 → 이익 중
             List<RuleViolation> violations = ViolationChecker.check(
@@ -115,7 +114,7 @@ class ViolationCheckerTest {
         @DisplayName("보유 없음 → 물타기 체크 스킵")
         void noHolding_skipped() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("1"));
+            InvestmentRule rule = new InvestmentRule(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("1"));
 
             List<RuleViolation> violations = ViolationChecker.check(
                 order, List.of(rule), null, BigDecimal.ZERO, new BigDecimal("50000000"), 0, NOW);
@@ -132,7 +131,7 @@ class ViolationCheckerTest {
         @DisplayName("오늘 주문 건수 + 1 ≥ 설정값 → 위반")
         void orderCountExceedingLimit_violation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
+            InvestmentRule rule = new InvestmentRule(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
 
             // todayOrderCount = 9, 새 카운트 = 9 + 1 = 10 ≥ 10
             List<RuleViolation> violations = ViolationChecker.check(
@@ -146,7 +145,7 @@ class ViolationCheckerTest {
         @DisplayName("오늘 주문 건수 + 1 < 설정값 → 위반 없음")
         void orderCountBelowLimit_noViolation() {
             Order order = createBuyOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
+            InvestmentRule rule = new InvestmentRule(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
 
             // todayOrderCount = 8, 새 카운트 = 8 + 1 = 9 < 10
             List<RuleViolation> violations = ViolationChecker.check(
@@ -159,7 +158,7 @@ class ViolationCheckerTest {
         @DisplayName("매도 주문도 과매매 체크 대상")
         void sellOrder_alsoChecked() {
             Order order = createSellOrder();
-            InvestmentRuleData rule = new InvestmentRuleData(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("5"));
+            InvestmentRule rule = new InvestmentRule(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("5"));
 
             List<RuleViolation> violations = ViolationChecker.check(
                 order, List.of(rule), null, BigDecimal.ZERO, new BigDecimal("50000000"), 4, NOW);
@@ -176,11 +175,11 @@ class ViolationCheckerTest {
         @DisplayName("여러 규칙 동시 위반 — 모두 기록")
         void multipleViolations_allRecorded() {
             Order order = createBuyOrder();
-            HoldingData holding = new HoldingData(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
-            List<InvestmentRuleData> rules = List.of(
-                new InvestmentRuleData(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5")),
-                new InvestmentRuleData(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3")),
-                new InvestmentRuleData(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"))
+            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
+            List<InvestmentRule> rules = List.of(
+                new InvestmentRule(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5")),
+                new InvestmentRule(2L, RuleType.AVERAGING_LIMIT, new BigDecimal("3")),
+                new InvestmentRule(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"))
             );
 
             List<RuleViolation> violations = ViolationChecker.check(
@@ -211,5 +210,16 @@ class ViolationCheckerTest {
         return Order.createMarketSellOrder(
             UUID.randomUUID().toString(), 1L, 1L,
             new BigDecimal("0.01"), new BigDecimal("50000000"), VENUE, NOW);
+    }
+
+    private Holding createHolding(BigDecimal avgBuyPrice, BigDecimal totalQuantity, int averagingDownCount) {
+        return Holding.builder()
+            .walletId(1L)
+            .coinId(1L)
+            .avgBuyPrice(avgBuyPrice)
+            .totalQuantity(totalQuantity)
+            .totalBuyAmount(avgBuyPrice.multiply(totalQuantity))
+            .averagingDownCount(averagingDownCount)
+            .build();
     }
 }

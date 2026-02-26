@@ -7,6 +7,7 @@ import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderComma
 import ksh.tryptobackend.trading.application.port.out.*;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort.ExchangeCoinData;
 import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategy;
+import ksh.tryptobackend.trading.domain.model.Holding;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
@@ -31,7 +32,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private final LivePricePort livePricePort;
     private final TradingVenuePort tradingVenuePort;
     private final ExchangeCoinPort exchangeCoinPort;
-    private final HoldingPort holdingPort;
+    private final HoldingPersistencePort holdingPersistencePort;
     private final ViolationCheckService violationCheckService;
     private final ViolationPersistencePort violationPersistencePort;
     private final List<OrderPlacementStrategy> strategies;
@@ -83,12 +84,14 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     }
 
     private void updateHolding(Long walletId, Long coinId, Order order, BigDecimal currentPrice) {
+        Holding holding = holdingPersistencePort.findByWalletIdAndCoinId(walletId, coinId)
+            .orElseGet(() -> Holding.empty(walletId, coinId));
         if (order.getSide() == Side.BUY) {
-            holdingPort.applyBuy(walletId, coinId,
-                order.getFilledPrice(), order.getQuantity().value(), currentPrice);
+            holding.applyBuy(order.getFilledPrice(), order.getQuantity().value(), currentPrice);
         } else {
-            holdingPort.applySell(walletId, coinId, order.getQuantity().value());
+            holding.applySell(order.getQuantity().value());
         }
+        holdingPersistencePort.save(holding);
     }
 
     private void applyBalanceChange(Long walletId, BalanceChange change) {

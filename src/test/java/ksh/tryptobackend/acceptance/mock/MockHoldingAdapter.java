@@ -1,40 +1,26 @@
 package ksh.tryptobackend.acceptance.mock;
 
+import ksh.tryptobackend.trading.application.port.out.HoldingPersistencePort;
 import ksh.tryptobackend.trading.domain.model.Holding;
-import ksh.tryptobackend.trading.application.port.out.HoldingPort;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockHoldingAdapter implements HoldingPort {
+public class MockHoldingAdapter implements HoldingPersistencePort {
 
     private final Map<String, Holding> holdings = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<HoldingData> findByWalletIdAndCoinId(Long walletId, Long coinId) {
-        Holding h = holdings.get(key(walletId, coinId));
-        if (h == null) {
-            return Optional.empty();
-        }
-        return Optional.of(new HoldingData(h.getAvgBuyPrice(), h.getTotalQuantity(), h.getAveragingDownCount()));
+    public Optional<Holding> findByWalletIdAndCoinId(Long walletId, Long coinId) {
+        return Optional.ofNullable(holdings.get(key(walletId, coinId)));
     }
 
     @Override
-    public void applyBuy(Long walletId, Long coinId, BigDecimal filledPrice,
-                         BigDecimal filledQuantity, BigDecimal currentPrice) {
-        Holding h = holdings.computeIfAbsent(key(walletId, coinId),
-            k -> Holding.empty(walletId, coinId));
-        h.applyBuy(filledPrice, filledQuantity, currentPrice);
-    }
-
-    @Override
-    public void applySell(Long walletId, Long coinId, BigDecimal filledQuantity) {
-        Holding h = holdings.get(key(walletId, coinId));
-        if (h != null) {
-            h.applySell(filledQuantity);
-        }
+    public Holding save(Holding holding) {
+        holdings.put(key(holding.getWalletId(), holding.getCoinId()), holding);
+        return holding;
     }
 
     public void setHolding(Long walletId, Long coinId, BigDecimal avgBuyPrice,
