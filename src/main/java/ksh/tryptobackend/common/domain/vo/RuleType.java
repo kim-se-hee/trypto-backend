@@ -1,4 +1,4 @@
-package ksh.tryptobackend.trading.domain.vo;
+package ksh.tryptobackend.common.domain.vo;
 
 public enum RuleType {
     LOSS_CUT,

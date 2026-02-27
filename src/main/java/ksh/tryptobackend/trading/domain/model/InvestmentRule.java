@@ -1,6 +1,6 @@
 package ksh.tryptobackend.trading.domain.model;
 
-import ksh.tryptobackend.trading.domain.vo.RuleType;
+import ksh.tryptobackend.common.domain.vo.RuleType;
 import ksh.tryptobackend.trading.domain.vo.Side;
 
 import java.math.BigDecimal;

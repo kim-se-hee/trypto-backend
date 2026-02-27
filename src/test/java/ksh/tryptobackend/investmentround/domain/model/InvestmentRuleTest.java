@@ -2,7 +2,7 @@ package ksh.tryptobackend.investmentround.domain.model;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.trading.domain.vo.RuleType;
+import ksh.tryptobackend.common.domain.vo.RuleType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
