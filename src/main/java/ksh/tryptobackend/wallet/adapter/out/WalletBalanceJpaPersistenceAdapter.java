@@ -1,6 +1,6 @@
 package ksh.tryptobackend.wallet.adapter.out;
 
-import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
+import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
-public class WalletBalanceJpaPersistenceAdapter implements WalletBalancePort {
+public class WalletBalanceJpaPersistenceAdapter implements WalletBalanceOperationPort {
 
     private final WalletBalanceJpaRepository repository;
 
