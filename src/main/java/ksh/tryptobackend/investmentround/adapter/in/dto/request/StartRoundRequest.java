@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundRuleCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundSeedCommand;
-import ksh.tryptobackend.trading.domain.vo.RuleType;
+import ksh.tryptobackend.common.domain.vo.RuleType;
 
 import java.math.BigDecimal;
 import java.util.List;

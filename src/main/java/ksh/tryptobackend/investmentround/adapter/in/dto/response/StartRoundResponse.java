@@ -3,7 +3,7 @@ package ksh.tryptobackend.investmentround.adapter.in.dto.response;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundRuleResult;
 import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
-import ksh.tryptobackend.trading.domain.vo.RuleType;
+import ksh.tryptobackend.common.domain.vo.RuleType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

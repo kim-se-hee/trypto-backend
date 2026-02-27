@@ -6,11 +6,12 @@
 |--------|---------------|--------|--------------|
 | Identity | User | — | Email, Password |
 | Wallet | Wallet, Transfer | WalletBalance | WalletAddress, TransferStatus, Chain |
-| Trading | Order, Swap | Holding, RuleViolation | Side, OrderType, OrderStatus, Fee, Slippage, ViolationReason, OrderAmountPolicy, TradingVenue, RuleType |
+| Trading | Order, Swap | Holding, RuleViolation | Side, OrderType, OrderStatus, Fee, Slippage, ViolationReason, OrderAmountPolicy, TradingVenue, ViolationRule |
 | MarketData | Coin, Exchange | ExchangeCoin, PriceCandle, WithdrawalFee | — |
-| Portfolio | PortfolioSnapshot | Ranking, SnapshotDetail | ProfitRate, AvgBuyPrice, TotalBuyAmount, RankingPeriod |
-| InvestmentRound | InvestmentRound | InvestmentRule, EmergencyFunding | SeedPolicy, RoundStatus, RuleType, RuleValue |
+| Portfolio | PortfolioSnapshot, Holding | Ranking, SnapshotDetail | ProfitRate, AvgBuyPrice, TotalBuyAmount, RankingPeriod |
+| InvestmentRound | InvestmentRound | RuleSetting, EmergencyFunding | SeedPolicy, RoundStatus, RuleValue |
 | RegretAnalysis | RegretReport | RuleScenario, ViolationTrade | AssetHistory, ImpactGap |
+| Common (Shared Kernel) | — | — | RuleType |
 
 **소유 관계:**
 - WalletBalance → WalletAddress
@@ -22,7 +23,7 @@
 - ExchangeCoin → PriceCandle
 - Swap → Fee, Slippage
 - SnapshotDetail → AvgBuyPrice, TotalBuyAmount
-- InvestmentRule → RuleType, RuleValue
+- RuleSetting → RuleType, RuleValue
 - Ranking → RankingPeriod
 - RuleScenario → ImpactGap
 
@@ -34,6 +35,7 @@
 | Wallet → MarketData | exchangeId, coinId | 출금 수수료 조회 |
 | Trading → Wallet | walletId | 잔고 검증, 잔고 반영 |
 | Trading → MarketData | — | 현재가 조회 |
+| Trading → Portfolio | walletId, coinId | 평균 매수가 조회, 보유 수량 갱신 |
 | Trading → InvestmentRound | roundId | 투자 원칙 위반 검증 |
 | Portfolio → Wallet | userId | 잔고 조회 |
 | Portfolio → MarketData | — | 현재가 조회 |
