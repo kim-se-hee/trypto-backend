@@ -23,7 +23,7 @@ public class GetRankingStatsService implements GetRankingStatsUseCase {
     @Transactional(readOnly = true)
     public RankingStatsResult getRankingStats(GetRankingStatsQuery query) {
         LocalDate latestDate = findLatestReferenceDate(query);
-        return getStats(query, latestDate);
+        return buildStats(query, latestDate);
     }
 
     private LocalDate findLatestReferenceDate(GetRankingStatsQuery query) {
@@ -31,8 +31,12 @@ public class GetRankingStatsService implements GetRankingStatsUseCase {
             .orElseThrow(() -> new CustomException(ErrorCode.RANKING_NOT_FOUND));
     }
 
-    private RankingStatsResult getStats(GetRankingStatsQuery query, LocalDate latestDate) {
+    private RankingStatsResult buildStats(GetRankingStatsQuery query, LocalDate latestDate) {
         RankingStatsProjection stats = rankingPersistencePort.getRankingStats(query.period(), latestDate);
-        return RankingStatsResult.from(stats);
+        return new RankingStatsResult(
+            stats.totalParticipants(),
+            stats.maxProfitRate(),
+            stats.avgProfitRate()
+        );
     }
 }
