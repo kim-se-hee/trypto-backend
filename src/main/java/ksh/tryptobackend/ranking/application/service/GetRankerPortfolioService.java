@@ -55,10 +55,7 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
     }
 
     private void validateTop100(RankingWithUserProjection ranking) {
-        Ranking domain = Ranking.builder()
-            .rank(ranking.rank())
-            .build();
-        if (!domain.isTop100()) {
+        if (!Ranking.isTop100(ranking.rank())) {
             throw new CustomException(ErrorCode.PORTFOLIO_VIEW_NOT_ALLOWED);
         }
     }
