@@ -5,16 +5,19 @@ import ksh.tryptobackend.wallet.adapter.out.entity.WalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.WalletPort;
+import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
+import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
 import ksh.tryptobackend.wallet.domain.model.Wallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class WalletJpaPersistenceAdapter implements WalletPort {
+public class WalletJpaPersistenceAdapter implements WalletPort, WalletQueryPort {
 
     private final WalletJpaRepository repository;
     private final WalletBalanceJpaRepository balanceRepository;
@@ -33,5 +36,11 @@ public class WalletJpaPersistenceAdapter implements WalletPort {
         balanceRepository.save(
             new WalletBalanceJpaEntity(walletId, baseCurrencyCoinId, initialAmount, BigDecimal.ZERO));
         return walletId;
+    }
+
+    @Override
+    public Optional<WalletInfo> findByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
+        return repository.findByRoundIdAndExchangeId(roundId, exchangeId)
+            .map(wallet -> new WalletInfo(wallet.getId(), wallet.getRoundId(), wallet.getExchangeId()));
     }
 }

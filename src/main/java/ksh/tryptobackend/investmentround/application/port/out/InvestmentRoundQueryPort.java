@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface InvestmentRoundQueryPort {
 
     Optional<InvestmentRoundInfo> findActiveRoundByUserId(Long userId);
+
+    Optional<InvestmentRoundInfo> findRoundInfoById(Long roundId);
 }
