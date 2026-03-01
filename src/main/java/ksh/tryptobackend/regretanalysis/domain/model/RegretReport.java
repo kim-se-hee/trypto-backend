@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +12,9 @@ import java.util.List;
 @Getter
 @Builder
 public class RegretReport {
+
+    private static final int RATE_SCALE = 4;
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final Long reportId;
     private final Long userId;
@@ -25,6 +29,25 @@ public class RegretReport {
     private final LocalDateTime createdAt;
     private final List<RuleImpact> ruleImpacts;
     private final List<ViolationDetail> violationDetails;
+
+    public static BigDecimal calculateMissedProfit(List<RuleImpact> ruleImpacts) {
+        BigDecimal totalLoss = ruleImpacts.stream()
+            .map(RuleImpact::getTotalLossAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalLoss.compareTo(BigDecimal.ZERO) > 0 ? totalLoss : BigDecimal.ZERO;
+    }
+
+    public static BigDecimal calculateRuleFollowedProfitRate(BigDecimal actualTotalAsset,
+                                                              BigDecimal totalInvestment,
+                                                              List<RuleImpact> ruleImpacts) {
+        BigDecimal totalLoss = ruleImpacts.stream()
+            .map(RuleImpact::getTotalLossAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal ruleFollowedAsset = actualTotalAsset.add(totalLoss);
+        return calculateProfitRate(ruleFollowedAsset, totalInvestment);
+    }
 
     public static RegretReport reconstitute(Long reportId, Long userId, Long roundId, Long exchangeId,
                                             int totalViolations, BigDecimal missedProfit,
@@ -48,5 +71,14 @@ public class RegretReport {
             .ruleImpacts(ruleImpacts)
             .violationDetails(violationDetails)
             .build();
+    }
+
+    private static BigDecimal calculateProfitRate(BigDecimal totalAsset, BigDecimal totalInvestment) {
+        if (totalInvestment.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return totalAsset.subtract(totalInvestment)
+            .divide(totalInvestment, RATE_SCALE, RoundingMode.HALF_UP)
+            .multiply(HUNDRED);
     }
 }
