@@ -13,4 +13,6 @@ public interface InvestmentRoundJpaRepository extends JpaRepository<InvestmentRo
     long countByUserId(Long userId);
 
     Optional<InvestmentRoundJpaEntity> findByUserIdAndStatus(Long userId, RoundStatus status);
+
+    Optional<InvestmentRoundJpaEntity> findByIdAndUserId(Long roundId, Long userId);
 }

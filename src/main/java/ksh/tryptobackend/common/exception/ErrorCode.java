@@ -19,6 +19,9 @@ public enum ErrorCode {
     INVALID_SEED_AMOUNT(400, "invalid.seed.amount"),
     INVALID_EMERGENCY_FUNDING_LIMIT(400, "invalid.emergency.funding.limit"),
     INVALID_RULE_THRESHOLD(400, "invalid.rule.threshold"),
+    EMERGENCY_FUNDING_DISABLED(400, "emergency.funding.disabled"),
+    EMERGENCY_FUNDING_CHANCE_EXHAUSTED(400, "emergency.funding.chance.exhausted"),
+    INVALID_EMERGENCY_FUNDING_AMOUNT(400, "invalid.emergency.funding.amount"),
 
     INVALID_RANKING_PERIOD(400, "invalid.ranking.period"),
     PORTFOLIO_VIEW_NOT_ALLOWED(403, "portfolio.view.not.allowed"),
@@ -29,6 +32,8 @@ public enum ErrorCode {
     EXCHANGE_NOT_FOUND(404, "exchange.not.found"),
     ORDER_NOT_FOUND(404, "order.not.found"),
     RANKING_NOT_FOUND(404, "ranking.not.found"),
+    ROUND_NOT_FOUND(404, "round.not.found"),
+    ROUND_ACCESS_DENIED(403, "round.access.denied"),
     ROUND_NOT_ACTIVE(404, "round.not.active"),
     USER_NOT_FOUND(404, "user.not.found"),
     ;

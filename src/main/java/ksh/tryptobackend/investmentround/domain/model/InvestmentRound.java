@@ -48,4 +48,62 @@ public class InvestmentRound {
             throw new CustomException(ErrorCode.INVALID_EMERGENCY_FUNDING_LIMIT);
         }
     }
+
+    public InvestmentRound end(LocalDateTime endedAt) {
+        if (status == RoundStatus.ENDED) {
+            return this;
+        }
+        if (status != RoundStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.ROUND_NOT_ACTIVE);
+        }
+
+        return InvestmentRound.builder()
+            .roundId(roundId)
+            .userId(userId)
+            .roundNumber(roundNumber)
+            .initialSeed(initialSeed)
+            .emergencyFundingLimit(emergencyFundingLimit)
+            .emergencyChargeCount(emergencyChargeCount)
+            .status(RoundStatus.ENDED)
+            .startedAt(startedAt)
+            .endedAt(endedAt)
+            .build();
+    }
+
+    public void validateOwnedBy(Long requesterUserId) {
+        if (!userId.equals(requesterUserId)) {
+            throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
+        }
+    }
+
+    public InvestmentRound chargeEmergencyFunding(BigDecimal amount) {
+        validateChargeEmergencyFunding(amount);
+
+        return InvestmentRound.builder()
+            .roundId(roundId)
+            .userId(userId)
+            .roundNumber(roundNumber)
+            .initialSeed(initialSeed)
+            .emergencyFundingLimit(emergencyFundingLimit)
+            .emergencyChargeCount(emergencyChargeCount - 1)
+            .status(status)
+            .startedAt(startedAt)
+            .endedAt(endedAt)
+            .build();
+    }
+
+    private void validateChargeEmergencyFunding(BigDecimal amount) {
+        if (status != RoundStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.ROUND_NOT_ACTIVE);
+        }
+        if (emergencyFundingLimit.compareTo(ZERO) == 0) {
+            throw new CustomException(ErrorCode.EMERGENCY_FUNDING_DISABLED);
+        }
+        if (emergencyChargeCount <= 0) {
+            throw new CustomException(ErrorCode.EMERGENCY_FUNDING_CHANCE_EXHAUSTED);
+        }
+        if (amount.compareTo(ZERO) <= 0 || amount.compareTo(emergencyFundingLimit) > 0) {
+            throw new CustomException(ErrorCode.INVALID_EMERGENCY_FUNDING_AMOUNT);
+        }
+    }
 }
