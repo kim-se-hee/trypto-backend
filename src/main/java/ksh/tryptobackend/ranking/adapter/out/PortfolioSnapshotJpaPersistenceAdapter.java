@@ -1,5 +1,6 @@
 package ksh.tryptobackend.ranking.adapter.out;
 
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -12,6 +13,7 @@ import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotDetailProjecti
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -39,12 +41,15 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
             .join(exchange).on(snapshot.exchangeId.eq(exchange.id))
             .where(snapshot.userId.eq(userId)
                 .and(snapshot.roundId.eq(roundId))
-                .and(snapshot.snapshotDate.eq(
-                    JPAExpressions
-                        .select(snapshot.snapshotDate.max())
-                        .from(snapshot)
-                        .where(snapshot.userId.eq(userId)
-                            .and(snapshot.roundId.eq(roundId))))))
+                .and(snapshot.snapshotDate.eq(latestSnapshotDate(userId, roundId))))
             .fetch();
+    }
+
+    private Expression<LocalDateTime> latestSnapshotDate(Long userId, Long roundId) {
+        return JPAExpressions
+            .select(snapshot.snapshotDate.max())
+            .from(snapshot)
+            .where(snapshot.userId.eq(userId)
+                .and(snapshot.roundId.eq(roundId)));
     }
 }
