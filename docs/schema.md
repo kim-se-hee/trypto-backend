@@ -203,8 +203,8 @@ erDiagram
         datetime created_at "생성일"
     }
 
-    RULE_SCENARIO {
-        id scenario_id PK "주 식별자"
+    RULE_IMPACT {
+        id rule_impact_id PK "주 식별자"
         id report_id FK "리포트 ID"
         id rule_id FK "투자 원칙 ID"
         number violation_count "위반 횟수"
@@ -212,8 +212,8 @@ erDiagram
         number impact_gap "수익률 영향 차이 (%p)"
     }
 
-    VIOLATION_TRADE {
-        id violation_trade_id PK "주 식별자"
+    VIOLATION_DETAIL {
+        id violation_detail_id PK "주 식별자"
         id report_id FK "리포트 ID"
         id order_id FK "주문 ID (nullable)"
         id rule_id FK "위반 원칙 ID"
@@ -259,9 +259,9 @@ erDiagram
     EXCHANGE ||--o{ PORTFOLIO_SNAPSHOT : ""
     COIN ||--o{ PORTFOLIO_SNAPSHOT_DETAIL : ""
     EXCHANGE ||--o{ REGRET_REPORT : ""
-    REGRET_REPORT ||--|{ RULE_SCENARIO : ""
-    REGRET_REPORT ||--|{ VIOLATION_TRADE : ""
-    INVESTMENT_RULE ||--o{ RULE_SCENARIO : ""
-    INVESTMENT_RULE ||--o{ VIOLATION_TRADE : ""
-    COIN ||--o{ VIOLATION_TRADE : ""
+    REGRET_REPORT ||--|{ RULE_IMPACT : ""
+    REGRET_REPORT ||--|{ VIOLATION_DETAIL : ""
+    INVESTMENT_RULE ||--o{ RULE_IMPACT : ""
+    INVESTMENT_RULE ||--o{ VIOLATION_DETAIL : ""
+    COIN ||--o{ VIOLATION_DETAIL : ""
 ```

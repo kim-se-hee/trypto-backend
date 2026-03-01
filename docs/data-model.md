@@ -10,7 +10,7 @@
 | MarketData | Coin, Exchange | ExchangeCoin, PriceCandle, WithdrawalFee | — |
 | Ranking | Ranking, PortfolioSnapshot | SnapshotDetail | ProfitRate, RankingPeriod |
 | InvestmentRound | InvestmentRound | RuleSetting, EmergencyFunding | SeedPolicy, RoundStatus, RuleValue |
-| RegretAnalysis | RegretReport | RuleScenario, ViolationTrade | AssetHistory, ImpactGap |
+| RegretAnalysis | RegretReport | RuleImpact, ViolationDetail | AssetHistory, ImpactGap |
 | Common (Shared Kernel) | — | — | RuleType |
 
 **소유 관계:**
@@ -25,7 +25,7 @@
 - SnapshotDetail → AvgBuyPrice, TotalBuyAmount
 - RuleSetting → RuleType, RuleValue
 - Ranking → RankingPeriod
-- RuleScenario → ImpactGap
+- RuleImpact → ImpactGap
 
 ## 모듈 간 의존
 
