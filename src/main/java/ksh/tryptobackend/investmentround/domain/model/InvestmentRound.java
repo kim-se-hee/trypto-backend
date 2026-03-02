@@ -79,6 +79,10 @@ public class InvestmentRound {
             .build();
     }
 
+    public boolean isEnded() {
+        return status == RoundStatus.ENDED;
+    }
+
     public void validateOwnedBy(Long requesterUserId) {
         if (!userId.equals(requesterUserId)) {
             throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
