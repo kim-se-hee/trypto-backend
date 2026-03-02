@@ -73,7 +73,7 @@ public class RegretReport {
             .build();
     }
 
-    private static BigDecimal calculateProfitRate(BigDecimal totalAsset, BigDecimal totalInvestment) {
+    static BigDecimal calculateProfitRate(BigDecimal totalAsset, BigDecimal totalInvestment) {
         if (totalInvestment.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
