@@ -28,7 +28,7 @@ public final class CumulativeLossTimeline {
     public static CumulativeLossTimeline build(List<ViolationDetail> violations,
                                                 List<LocalDate> snapshotDates) {
         List<ViolationDetail> sortedViolations = violations.stream()
-            .sorted(Comparator.comparing(v -> v.getOccurredAt().toLocalDate()))
+            .sorted(Comparator.comparing(ViolationDetail::getOccurredDate))
             .toList();
 
         List<DailyLoss> result = new ArrayList<>();
@@ -37,7 +37,7 @@ public final class CumulativeLossTimeline {
 
         for (LocalDate snapshotDate : snapshotDates) {
             while (violationIndex < sortedViolations.size()
-                && !sortedViolations.get(violationIndex).getOccurredAt().toLocalDate().isAfter(snapshotDate)) {
+                && !sortedViolations.get(violationIndex).getOccurredDate().isAfter(snapshotDate)) {
                 cumulativeLoss = cumulativeLoss.add(sortedViolations.get(violationIndex).getLossAmount());
                 violationIndex++;
             }

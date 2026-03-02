@@ -20,7 +20,7 @@ public final class ViolationMarkers {
     public static ViolationMarkers from(List<ViolationDetail> violations,
                                          AssetTimeline timeline) {
         Set<LocalDate> violationDates = violations.stream()
-            .map(v -> v.getOccurredAt().toLocalDate())
+            .map(ViolationDetail::getOccurredDate)
             .collect(Collectors.toSet());
 
         List<ViolationMarker> markers = violationDates.stream()
