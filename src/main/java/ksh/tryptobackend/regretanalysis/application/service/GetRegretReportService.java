@@ -14,14 +14,11 @@ import ksh.tryptobackend.regretanalysis.application.port.out.dto.ExchangeMetadat
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.RoundInfoResult;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.RuleInfo;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
-import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,12 +61,8 @@ public class GetRegretReportService implements GetRegretReportUseCase {
                                             List<RuleInfo> rules) {
         Map<Long, RuleInfo> ruleMap = rules.stream()
             .collect(Collectors.toMap(RuleInfo::ruleId, r -> r));
-
-        Set<Long> coinIds = report.getViolationDetails().stream()
-            .map(ViolationDetail::getCoinId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-        Map<Long, String> coinSymbols = coinSymbolPort.findSymbolsByIds(coinIds);
+        Map<Long, String> coinSymbols = coinSymbolPort.findSymbolsByIds(
+            report.getViolationDetails().extractCoinIds());
 
         return GetRegretReportResult.from(report, exchange, ruleMap, coinSymbols);
     }

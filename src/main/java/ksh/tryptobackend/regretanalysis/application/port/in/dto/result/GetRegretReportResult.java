@@ -38,7 +38,7 @@ public record GetRegretReportResult(
             .toList();
 
         List<ViolationDetailResult> violationDetailResults = groupViolationDetails(
-            report.getViolationDetails(), ruleMap, coinSymbols);
+            report.getViolationDetails().toList(), ruleMap, coinSymbols);
 
         return new GetRegretReportResult(
             report.getReportId(),

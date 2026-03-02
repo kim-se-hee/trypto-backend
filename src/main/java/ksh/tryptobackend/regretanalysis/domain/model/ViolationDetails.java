@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ViolationDetails {
@@ -41,6 +43,13 @@ public class ViolationDetails {
         }
 
         return impacts;
+    }
+
+    public Set<Long> extractCoinIds() {
+        return details.stream()
+            .map(ViolationDetail::getCoinId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     }
 
     public List<ViolationDetail> toList() {
