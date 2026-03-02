@@ -12,11 +12,11 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.result.ChargeEm
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,19 +28,22 @@ public class RoundController {
     private final ChargeEmergencyFundingUseCase chargeEmergencyFundingUseCase;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponseDto<StartRoundResponse> createRound(@Valid @RequestBody StartRoundRequest request) {
+    public ResponseEntity<ApiResponseDto<StartRoundResponse>> createRound(
+        @Valid @RequestBody StartRoundRequest request
+    ) {
         StartRoundResult result = startRoundUseCase.startRound(request.toCommand());
-        return ApiResponseDto.created("투자 라운드가 시작되었습니다.", StartRoundResponse.from(result));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponseDto.created("투자 라운드가 시작되었습니다.", StartRoundResponse.from(result)));
     }
 
     @PostMapping("/{roundId}/emergency-funding")
-    public ApiResponseDto<ChargeEmergencyFundingResponse> chargeEmergencyFunding(
+    public ResponseEntity<ApiResponseDto<ChargeEmergencyFundingResponse>> chargeEmergencyFunding(
         @PathVariable Long roundId,
         @Valid @RequestBody ChargeEmergencyFundingRequest request
     ) {
         ChargeEmergencyFundingResult result = chargeEmergencyFundingUseCase
             .chargeEmergencyFunding(request.toCommand(roundId));
-        return ApiResponseDto.success("긴급 자금을 투입했습니다.", ChargeEmergencyFundingResponse.from(result));
+        return ResponseEntity.ok(
+            ApiResponseDto.success("긴급 자금을 투입했습니다.", ChargeEmergencyFundingResponse.from(result)));
     }
 }
