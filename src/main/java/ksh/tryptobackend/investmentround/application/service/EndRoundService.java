@@ -27,8 +27,12 @@ public class EndRoundService implements EndRoundUseCase {
         InvestmentRound round = getRound(command.roundId());
         round.validateOwnedBy(command.userId());
 
+        if (round.isEnded()) {
+            return toResult(round);
+        }
+
         InvestmentRound endedRound = round.end(LocalDateTime.now(clock));
-        InvestmentRound savedRound = saveIfChanged(round, endedRound);
+        InvestmentRound savedRound = investmentRoundPersistencePort.save(endedRound);
 
         return toResult(savedRound);
     }
@@ -36,13 +40,6 @@ public class EndRoundService implements EndRoundUseCase {
     private InvestmentRound getRound(Long roundId) {
         return investmentRoundPersistencePort.findById(roundId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_FOUND));
-    }
-
-    private InvestmentRound saveIfChanged(InvestmentRound original, InvestmentRound ended) {
-        if (original == ended) {
-            return original;
-        }
-        return investmentRoundPersistencePort.save(ended);
     }
 
     private EndRoundResult toResult(InvestmentRound round) {
