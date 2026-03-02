@@ -4,7 +4,7 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretReportUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretReportQuery;
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.GetRegretReportResult;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretReportResult;
 import ksh.tryptobackend.regretanalysis.application.port.out.CoinSymbolPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.ExchangeMetadataPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.InvestmentRoundPort;
@@ -32,7 +32,7 @@ public class GetRegretReportService implements GetRegretReportUseCase {
     private final CoinSymbolPort coinSymbolPort;
 
     @Override
-    public GetRegretReportResult getRegretReport(GetRegretReportQuery query) {
+    public RegretReportResult getRegretReport(GetRegretReportQuery query) {
         validateRoundOwner(query.roundId(), query.userId());
         validateWalletExistsForExchange(query.roundId(), query.exchangeId());
         ExchangeMetadata exchange = exchangeMetadataPort.getExchangeMetadata(query.exchangeId());
@@ -57,13 +57,13 @@ public class GetRegretReportService implements GetRegretReportUseCase {
         }
     }
 
-    private GetRegretReportResult toResult(RegretReport report, ExchangeMetadata exchange,
-                                            List<RuleInfo> rules) {
+    private RegretReportResult toResult(RegretReport report, ExchangeMetadata exchange,
+                                        List<RuleInfo> rules) {
         Map<Long, RuleInfo> ruleMap = rules.stream()
             .collect(Collectors.toMap(RuleInfo::ruleId, r -> r));
         Map<Long, String> coinSymbols = coinSymbolPort.findSymbolsByIds(
             report.getViolationDetails().extractCoinIds());
 
-        return GetRegretReportResult.from(report, exchange, ruleMap, coinSymbols);
+        return RegretReportResult.from(report, exchange, ruleMap, coinSymbols);
     }
 }

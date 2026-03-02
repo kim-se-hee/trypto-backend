@@ -3,9 +3,9 @@ package ksh.tryptobackend.regretanalysis.adapter.in;
 import jakarta.validation.Valid;
 import ksh.tryptobackend.common.dto.response.ApiResponseDto;
 import ksh.tryptobackend.regretanalysis.adapter.in.dto.request.GetRegretReportRequest;
-import ksh.tryptobackend.regretanalysis.adapter.in.dto.response.GetRegretReportResponse;
+import ksh.tryptobackend.regretanalysis.adapter.in.dto.response.RegretReportResponse;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretReportUseCase;
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.GetRegretReportResult;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretReportResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,10 +21,10 @@ public class RegretController {
     private final GetRegretReportUseCase getRegretReportUseCase;
 
     @GetMapping("/{roundId}/regret")
-    public ApiResponseDto<GetRegretReportResponse> getRegretReport(
+    public ApiResponseDto<RegretReportResponse> getRegretReport(
             @PathVariable Long roundId,
             @Valid @ModelAttribute GetRegretReportRequest request) {
-        GetRegretReportResult result = getRegretReportUseCase.getRegretReport(request.toQuery(roundId));
-        return ApiResponseDto.success("투자 복기 리포트를 조회했습니다.", GetRegretReportResponse.from(result));
+        RegretReportResult result = getRegretReportUseCase.getRegretReport(request.toQuery(roundId));
+        return ApiResponseDto.success("투자 복기 리포트를 조회했습니다.", RegretReportResponse.from(result));
     }
 }

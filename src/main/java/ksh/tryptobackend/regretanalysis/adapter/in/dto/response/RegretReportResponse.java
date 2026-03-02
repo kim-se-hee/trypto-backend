@@ -1,13 +1,13 @@
 package ksh.tryptobackend.regretanalysis.adapter.in.dto.response;
 
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.GetRegretReportResult;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretReportResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record GetRegretReportResponse(
+public record RegretReportResponse(
     Long reportId,
     Long roundId,
     Long exchangeId,
@@ -23,7 +23,7 @@ public record GetRegretReportResponse(
     List<ViolationDetailResponse> violationDetails
 ) {
 
-    public static GetRegretReportResponse from(GetRegretReportResult result) {
+    public static RegretReportResponse from(RegretReportResult result) {
         List<RuleImpactResponse> ruleImpactResponses = result.ruleImpacts().stream()
             .map(RuleImpactResponse::from)
             .toList();
@@ -32,7 +32,7 @@ public record GetRegretReportResponse(
             .map(ViolationDetailResponse::from)
             .toList();
 
-        return new GetRegretReportResponse(
+        return new RegretReportResponse(
             result.reportId(),
             result.roundId(),
             result.exchangeId(),
@@ -60,7 +60,7 @@ public record GetRegretReportResponse(
         BigDecimal impactGap
     ) {
 
-        public static RuleImpactResponse from(GetRegretReportResult.RuleImpactResult result) {
+        public static RuleImpactResponse from(RegretReportResult.RuleImpactResult result) {
             return new RuleImpactResponse(
                 result.ruleImpactId(),
                 result.ruleId(),
@@ -83,7 +83,7 @@ public record GetRegretReportResponse(
         LocalDateTime occurredAt
     ) {
 
-        public static ViolationDetailResponse from(GetRegretReportResult.ViolationDetailResult result) {
+        public static ViolationDetailResponse from(RegretReportResult.ViolationDetailResult result) {
             return new ViolationDetailResponse(
                 result.violationDetailId(),
                 result.orderId(),
