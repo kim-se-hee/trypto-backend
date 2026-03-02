@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 
 public final class ViolationMarkers {
 
-    private final List<Marker> markers;
+    private final List<ViolationMarker> markers;
 
-    private ViolationMarkers(List<Marker> markers) {
+    private ViolationMarkers(List<ViolationMarker> markers) {
         this.markers = markers;
     }
 
@@ -23,17 +23,17 @@ public final class ViolationMarkers {
             .map(v -> v.getOccurredAt().toLocalDate())
             .collect(Collectors.toSet());
 
-        List<Marker> markers = violationDates.stream()
+        List<ViolationMarker> markers = violationDates.stream()
             .sorted()
             .flatMap(date -> timeline.findAssetAt(date)
-                .map(asset -> new Marker(date, asset))
+                .map(asset -> new ViolationMarker(date, asset))
                 .stream())
             .toList();
 
         return new ViolationMarkers(markers);
     }
 
-    public List<Marker> getMarkers() {
+    public List<ViolationMarker> getMarkers() {
         return markers;
     }
 
@@ -49,6 +49,6 @@ public final class ViolationMarkers {
         return Objects.hash(markers);
     }
 
-    public record Marker(LocalDate date, BigDecimal assetValue) {
+    public record ViolationMarker(LocalDate date, BigDecimal assetValue) {
     }
 }
