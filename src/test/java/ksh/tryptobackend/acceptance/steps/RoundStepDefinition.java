@@ -49,10 +49,10 @@ public class RoundStepDefinition {
 
     @Before
     public void setUp() {
-        investmentRuleJpaRepository.deleteAll();
-        walletJpaRepository.deleteAll();
-        investmentRoundJpaRepository.deleteAll();
-        exchangeJpaRepository.deleteAll();
+        investmentRuleJpaRepository.deleteAllInBatch();
+        walletJpaRepository.deleteAllInBatch();
+        investmentRoundJpaRepository.deleteAllInBatch();
+        exchangeJpaRepository.deleteAllInBatch();
         lastRoundId = null;
     }
 
