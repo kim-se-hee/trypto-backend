@@ -47,10 +47,10 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
         Long walletId = getWalletId(command.roundId(), command.exchangeId());
         ExchangeInfo exchange = getExchange(command.exchangeId());
 
+        investmentRoundPersistencePort.save(updatedRound);
         LocalDateTime now = LocalDateTime.now(clock);
         fundingWalletPort.addBalance(walletId, exchange.baseCurrencyCoinId(), command.amount());
         EmergencyFunding funding = saveEmergencyFunding(command, now);
-        investmentRoundPersistencePort.save(updatedRound);
 
         return toResult(funding, updatedRound);
     }
