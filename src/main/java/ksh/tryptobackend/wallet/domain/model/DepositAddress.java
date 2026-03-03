@@ -12,6 +12,8 @@ import java.util.HexFormat;
 @Builder
 public class DepositAddress {
 
+    private static final HexFormat HEX_FORMAT = HexFormat.of();
+
     private final Long depositAddressId;
     private final Long walletId;
     private final String chain;
@@ -35,7 +37,7 @@ public class DepositAddress {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
+            return HEX_FORMAT.formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 algorithm not available", e);
         }
