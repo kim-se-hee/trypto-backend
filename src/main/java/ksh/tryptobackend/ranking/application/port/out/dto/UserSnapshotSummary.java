@@ -8,4 +8,8 @@ public record UserSnapshotSummary(
     BigDecimal totalAssetKrw,
     BigDecimal totalInvestmentKrw
 ) {
+
+    public RoundKey roundKey() {
+        return new RoundKey(userId, roundId);
+    }
 }
