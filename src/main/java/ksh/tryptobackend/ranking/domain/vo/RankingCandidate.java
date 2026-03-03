@@ -1,13 +1,12 @@
 package ksh.tryptobackend.ranking.domain.vo;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 
 public record RankingCandidate(
     Long userId,
     Long roundId,
-    BigDecimal profitRate,
+    ProfitRate profitRate,
     int tradeCount,
     LocalDateTime startedAt
 ) implements Comparable<RankingCandidate> {
