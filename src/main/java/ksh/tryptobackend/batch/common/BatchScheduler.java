@@ -1,4 +1,4 @@
-package ksh.tryptobackend.common.batch;
+package ksh.tryptobackend.batch.common;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

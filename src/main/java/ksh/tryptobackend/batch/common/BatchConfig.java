@@ -1,4 +1,4 @@
-package ksh.tryptobackend.common.batch;
+package ksh.tryptobackend.batch.common;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.context.annotation.Bean;
