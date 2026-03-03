@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -41,10 +40,10 @@ public class RegretReportItemProcessor implements ItemProcessor<RegretReportInpu
         Map<Long, BigDecimal> currentPrices = resolveCurrentPrices(violations);
         List<ViolationDetail> details = toViolationDetails(violations, currentPrices);
 
-        Optional<AssetSnapshot> snapshotOpt = portfolioSnapshotPort
-            .findLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId());
-        BigDecimal actualProfitRate = snapshotOpt.map(AssetSnapshot::getTotalProfitRate).orElse(BigDecimal.ZERO);
-        BigDecimal totalInvestment = snapshotOpt.map(AssetSnapshot::getTotalInvestment).orElse(BigDecimal.ZERO);
+        AssetSnapshot snapshot = portfolioSnapshotPort
+            .getLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId());
+        BigDecimal actualProfitRate = snapshot.getTotalProfitRate();
+        BigDecimal totalInvestment = snapshot.getTotalInvestment();
 
         ViolationDetails violationDetails = new ViolationDetails(details);
         List<RuleImpact> impacts = violationDetails.toRuleImpacts(totalInvestment);

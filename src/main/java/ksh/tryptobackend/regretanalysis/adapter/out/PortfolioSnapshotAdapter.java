@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -17,9 +16,11 @@ public class PortfolioSnapshotAdapter implements PortfolioSnapshotPort {
     private final SnapshotQueryPort snapshotQueryPort;
 
     @Override
-    public Optional<AssetSnapshot> findLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
+    public AssetSnapshot getLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
         return snapshotQueryPort.findLatestByRoundIdAndExchangeId(roundId, exchangeId)
-            .map(this::toAssetSnapshot);
+            .map(this::toAssetSnapshot)
+            .orElseThrow(() -> new IllegalStateException(
+                "스냅샷이 존재해야 하지만 찾을 수 없습니다: roundId=" + roundId + ", exchangeId=" + exchangeId));
     }
 
     @Override
