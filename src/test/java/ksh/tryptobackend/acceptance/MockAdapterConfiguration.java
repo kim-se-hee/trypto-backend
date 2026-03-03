@@ -1,5 +1,6 @@
 package ksh.tryptobackend.acceptance;
 
+import ksh.tryptobackend.acceptance.mock.MockBtcPriceHistoryAdapter;
 import ksh.tryptobackend.acceptance.mock.MockExchangeCoinAdapter;
 import ksh.tryptobackend.acceptance.mock.MockHoldingAdapter;
 import ksh.tryptobackend.acceptance.mock.MockInvestmentRuleAdapter;
@@ -9,6 +10,7 @@ import ksh.tryptobackend.acceptance.mock.MockTradingVenueAdapter;
 import ksh.tryptobackend.acceptance.mock.MockViolationPersistenceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletInfoAdapter;
+import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort;
 import ksh.tryptobackend.trading.application.port.out.HoldingPersistencePort;
 import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort;
@@ -77,5 +79,11 @@ public class MockAdapterConfiguration {
     @Primary
     public WalletInfoPort walletInfoPort() {
         return new MockWalletInfoAdapter();
+    }
+
+    @Bean
+    @Primary
+    public BtcPriceHistoryPort btcPriceHistoryPort() {
+        return new MockBtcPriceHistoryAdapter();
     }
 }

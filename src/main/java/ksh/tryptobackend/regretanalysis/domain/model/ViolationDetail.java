@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -38,6 +39,10 @@ public class ViolationDetail {
 
     public boolean isMonitoringViolation() {
         return orderId == null;
+    }
+
+    public LocalDate getOccurredDate() {
+        return occurredAt.toLocalDate();
     }
 
     public static ViolationDetail reconstitute(Long violationDetailId, Long reportId, Long orderId,
