@@ -13,10 +13,12 @@ import ksh.tryptobackend.ranking.adapter.out.entity.SnapshotDetailJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.repository.PortfolioSnapshotJpaRepository;
 import ksh.tryptobackend.ranking.adapter.out.repository.SnapshotDetailJpaRepository;
 import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.SnapshotAggregationPort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotPersistencePort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotDetailProjection;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotInfo;
+import ksh.tryptobackend.ranking.application.port.out.dto.UserSnapshotSummary;
 import ksh.tryptobackend.ranking.domain.model.PortfolioSnapshot;
 import ksh.tryptobackend.ranking.domain.model.SnapshotDetail;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshotPort, SnapshotQueryPort, SnapshotPersistencePort {
+public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshotPort, SnapshotQueryPort, SnapshotPersistencePort, SnapshotAggregationPort {
 
     private final JPAQueryFactory queryFactory;
     private final PortfolioSnapshotJpaRepository snapshotRepository;
@@ -102,6 +104,20 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
             .map(d -> SnapshotDetailJpaEntity.fromDomain(d, snapshotId))
             .toList();
         detailRepository.saveAll(entities);
+    }
+
+    @Override
+    public List<UserSnapshotSummary> findLatestSummaries(LocalDate snapshotDate) {
+        return queryFactory
+            .select(Projections.constructor(UserSnapshotSummary.class,
+                snapshot.userId,
+                snapshot.roundId,
+                snapshot.totalAssetKrw.sum(),
+                snapshot.totalInvestmentKrw.sum()))
+            .from(snapshot)
+            .where(snapshot.snapshotDate.eq(snapshotDate))
+            .groupBy(snapshot.userId, snapshot.roundId)
+            .fetch();
     }
 
     private Expression<LocalDate> latestSnapshotDate(Long userId, Long roundId) {
