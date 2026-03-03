@@ -11,4 +11,6 @@ public interface WalletJpaRepository extends JpaRepository<WalletJpaEntity, Long
     Optional<WalletJpaEntity> findByRoundIdAndExchangeId(Long roundId, Long exchangeId);
 
     List<WalletJpaEntity> findByRoundId(Long roundId);
+
+    List<WalletJpaEntity> findByRoundIdIn(List<Long> roundIds);
 }
