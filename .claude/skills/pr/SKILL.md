@@ -216,8 +216,12 @@ PR 생성 후 즉시 main으로 Squash Merge한다.
 - `--subject`와 `--body ""`를 **반드시 한 명령에** 함께 넘긴다. 
 - `--subject`와 `--body`를 별도 명령으로 분리하지 않는다 (첫 명령에서 이미 머지될 수 있음).
 
+**Squash Merge 커밋 제목에는 반드시 PR 번호를 포함한다:**
+- 형식: `[#ISSUE_NUMBER] PR 제목 (#PR_NUMBER)`
+- `gh pr create`의 출력에서 PR 번호를 파싱하여 사용한다.
+
 ```bash
-gh pr merge --squash --subject "[#N] PR 제목" --body ""
+gh pr merge --squash --subject "[#N] PR 제목 (#PR_NUMBER)" --body ""
 ```
 
 결과 커밋 예시:
@@ -227,10 +231,12 @@ gh pr merge --squash --subject "[#N] PR 제목" --body ""
 
 ### 9. 로컬 정리
 
-머지 완료 후 로컬을 최신 상태로 맞춘다.
+머지 완료 후 로컬을 최신 상태로 맞추고 브랜치를 삭제한다.
 
 ```bash
 git checkout main
 git pull origin main
-git branch -d <머지된-브랜치명>
+git branch -D <머지된-브랜치명>
 ```
+
+- Squash Merge 후에는 `git branch -d`가 "not fully merged" 경고를 내므로 `-D`를 사용한다.
