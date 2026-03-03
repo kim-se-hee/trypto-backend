@@ -21,7 +21,7 @@ erDiagram
         number initial_seed "시작 시드머니"
         number emergency_funding_limit "1회 긴급 자금 투입 상한"
         number emergency_charge_count "긴급 충전 잔여 횟수"
-        string status "진행중 파산 종료"
+        string status "ACTIVE BANKRUPT ENDED"
         datetime started_at "라운드 시작일"
         datetime ended_at "라운드 종료일"
     }

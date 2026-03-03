@@ -22,7 +22,7 @@
 
 일별 자산 추이를 그래프로 표현하기 위해 `PORTFOLIO_SNAPSHOT`이 배치로 적재되어 있어야 한다. 배치로 적재된 날짜까지의 데이터만 제공한다 (당일 실시간 계산 없음).
 
-스냅샷 배치 상세는 [portfolio-snapshot-batch.md](../../../../Desktop/batch/portfolio-snapshot-batch.md)를 참조한다.
+스냅샷 배치 상세는 [portfolio-snapshot-batch.md](../batch/portfolio-snapshot-batch.md)를 참조한다.
 
 # 복기 그래프 데이터 조회
 

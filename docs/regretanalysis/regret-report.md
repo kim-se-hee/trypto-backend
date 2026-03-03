@@ -15,7 +15,7 @@
 
 일별 자산 추이를 분석하기 위해 `PORTFOLIO_SNAPSHOT`이 배치로 적재되어 있어야 한다.
 
-스냅샷 배치 상세는 [portfolio-snapshot-batch.md](../../../../Desktop/batch/portfolio-snapshot-batch.md)를 참조한다.
+스냅샷 배치 상세는 [portfolio-snapshot-batch.md](../batch/portfolio-snapshot-batch.md)를 참조한다.
 
 ## 투자 원칙 위반 기록
 
@@ -54,7 +54,7 @@
 
 배치(RegretReportJob)에서 리포트를 사전 생성한다. API는 배치가 생성한 데이터를 조회만 한다. 리포트가 아직 없으면 (라운드 시작 당일 등) `REPORT_NOT_FOUND` 에러를 반환한다.
 
-배치 상세는 [portfolio-snapshot-batch.md](../../../../Desktop/batch/portfolio-snapshot-batch.md)를 참조한다.
+배치 상세는 [portfolio-snapshot-batch.md](../batch/portfolio-snapshot-batch.md)를 참조한다.
 
 ### 손실 계산
 
