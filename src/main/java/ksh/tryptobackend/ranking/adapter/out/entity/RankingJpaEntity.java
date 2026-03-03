@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import ksh.tryptobackend.ranking.domain.model.Ranking;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -52,4 +53,17 @@ public class RankingJpaEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public static RankingJpaEntity fromDomain(Ranking ranking) {
+        RankingJpaEntity entity = new RankingJpaEntity();
+        entity.userId = ranking.getUserId();
+        entity.roundId = ranking.getRoundId();
+        entity.period = ranking.getPeriod();
+        entity.rank = ranking.getRank();
+        entity.profitRate = ranking.getProfitRate().value();
+        entity.tradeCount = ranking.getTradeCount();
+        entity.referenceDate = ranking.getReferenceDate();
+        entity.createdAt = ranking.getCreatedAt();
+        return entity;
+    }
 }

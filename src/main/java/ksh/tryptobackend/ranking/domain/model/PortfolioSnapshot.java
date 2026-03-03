@@ -21,6 +21,7 @@ public class PortfolioSnapshot {
     private final BigDecimal totalAsset;
     private final BigDecimal totalAssetKrw;
     private final BigDecimal totalInvestment;
+    private final BigDecimal totalInvestmentKrw;
     private final BigDecimal totalProfit;
     private final BigDecimal totalProfitRate;
     private final LocalDate snapshotDate;
@@ -29,6 +30,7 @@ public class PortfolioSnapshot {
                                            BigDecimal totalAsset, BigDecimal totalInvestment,
                                            KrwConversionRate conversionRate, LocalDate snapshotDate) {
         BigDecimal totalAssetKrw = conversionRate.convert(totalAsset);
+        BigDecimal totalInvestmentKrw = conversionRate.convert(totalInvestment);
         BigDecimal totalProfit = totalAsset.subtract(totalInvestment);
         BigDecimal totalProfitRate = calculateProfitRate(totalAsset, totalInvestment);
 
@@ -39,6 +41,7 @@ public class PortfolioSnapshot {
             .totalAsset(totalAsset)
             .totalAssetKrw(totalAssetKrw)
             .totalInvestment(totalInvestment)
+            .totalInvestmentKrw(totalInvestmentKrw)
             .totalProfit(totalProfit)
             .totalProfitRate(totalProfitRate)
             .snapshotDate(snapshotDate)
