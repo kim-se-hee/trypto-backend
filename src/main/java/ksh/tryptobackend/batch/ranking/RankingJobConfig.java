@@ -1,4 +1,4 @@
-package ksh.tryptobackend.ranking.adapter.in.batch;
+package ksh.tryptobackend.batch.ranking;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;

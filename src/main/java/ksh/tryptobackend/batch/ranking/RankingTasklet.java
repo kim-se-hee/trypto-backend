@@ -1,4 +1,4 @@
-package ksh.tryptobackend.ranking.adapter.in.batch;
+package ksh.tryptobackend.batch.ranking;
 
 import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingEligibilityPort;
