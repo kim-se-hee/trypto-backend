@@ -16,11 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-
 @Service
 @RequiredArgsConstructor
 public class GetDepositAddressService implements GetDepositAddressUseCase {
@@ -41,30 +36,12 @@ public class GetDepositAddressService implements GetDepositAddressUseCase {
             wallet.exchangeId(), query.coinId(), query.chain());
 
         return depositAddressPersistencePort.findByWalletIdAndChain(query.walletId(), query.chain())
-            .orElseGet(() -> createDepositAddress(query.walletId(), query.chain(), chainInfo.tagRequired()));
+            .orElseGet(() -> depositAddressPersistencePort.save(
+                DepositAddress.create(query.walletId(), query.chain(), chainInfo.tagRequired())));
     }
 
     private WalletInfo getWallet(Long walletId) {
         return walletQueryPort.findById(walletId)
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
-    }
-
-    private DepositAddress createDepositAddress(Long walletId, String chain, boolean tagRequired) {
-        String seed = walletId + ":" + chain;
-        String address = generateHash(seed);
-        String tag = tagRequired ? generateHash(seed + ":tag") : null;
-
-        DepositAddress depositAddress = DepositAddress.create(walletId, chain, address, tag);
-        return depositAddressPersistencePort.save(depositAddress);
-    }
-
-    private String generateHash(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm not available", e);
-        }
     }
 }
