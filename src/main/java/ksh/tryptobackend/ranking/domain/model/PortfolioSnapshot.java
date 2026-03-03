@@ -1,18 +1,16 @@
 package ksh.tryptobackend.ranking.domain.model;
 
 import ksh.tryptobackend.ranking.domain.vo.KrwConversionRate;
+import ksh.tryptobackend.ranking.domain.vo.ProfitRate;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 
 @Getter
 @Builder
 public class PortfolioSnapshot {
-
-    private static final int RATE_SCALE = 4;
 
     private final Long id;
     private final Long userId;
@@ -32,7 +30,7 @@ public class PortfolioSnapshot {
         BigDecimal totalAssetKrw = conversionRate.convert(totalAsset);
         BigDecimal totalInvestmentKrw = conversionRate.convert(totalInvestment);
         BigDecimal totalProfit = totalAsset.subtract(totalInvestment);
-        BigDecimal totalProfitRate = calculateProfitRate(totalAsset, totalInvestment);
+        BigDecimal totalProfitRate = ProfitRate.fromAssetChange(totalAsset, totalInvestment).value();
 
         return PortfolioSnapshot.builder()
             .userId(userId)
@@ -46,14 +44,5 @@ public class PortfolioSnapshot {
             .totalProfitRate(totalProfitRate)
             .snapshotDate(snapshotDate)
             .build();
-    }
-
-    private static BigDecimal calculateProfitRate(BigDecimal totalAsset, BigDecimal totalInvestment) {
-        if (totalInvestment.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-        return totalAsset.subtract(totalInvestment)
-            .divide(totalInvestment, RATE_SCALE, RoundingMode.HALF_UP)
-            .multiply(new BigDecimal("100"));
     }
 }
