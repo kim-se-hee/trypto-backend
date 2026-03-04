@@ -65,7 +65,7 @@ public class Transfer {
             case FROZEN -> List.of(
                 new TransferBalanceChange.Lock(fromWalletId, coinId, totalDeduction)
             );
-            default -> throw new IllegalStateException("Unexpected transfer status: " + status);
+            default -> throw new IllegalStateException("지원하지 않는 송금 상태: " + status);
         };
     }
 

@@ -17,7 +17,7 @@ public class TransferExchangeAdapter implements TransferExchangePort {
     @Override
     public TransferSourceExchange getExchangeDetail(Long exchangeId) {
         return exchangeQueryPort.findExchangeDetailById(exchangeId)
-            .map(detail -> TransferSourceExchange.of(
+            .map(detail -> new TransferSourceExchange(
                 detail.baseCurrencyCoinId(), detail.domestic()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
