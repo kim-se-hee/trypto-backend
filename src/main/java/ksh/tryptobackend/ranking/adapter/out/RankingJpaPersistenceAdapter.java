@@ -15,6 +15,7 @@ import ksh.tryptobackend.ranking.domain.model.Ranking;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -96,12 +97,9 @@ public class RankingJpaPersistenceAdapter implements RankingPersistencePort, Ran
     }
 
     @Override
-    public void deleteByPeriodAndDate(RankingPeriod period, LocalDate referenceDate) {
+    @Transactional
+    public void replaceByPeriodAndDate(List<Ranking> rankings, RankingPeriod period, LocalDate referenceDate) {
         rankingJpaRepository.deleteByPeriodAndReferenceDate(period, referenceDate);
-    }
-
-    @Override
-    public void saveAll(List<Ranking> rankings) {
         List<RankingJpaEntity> entities = rankings.stream()
             .map(RankingJpaEntity::fromDomain)
             .toList();

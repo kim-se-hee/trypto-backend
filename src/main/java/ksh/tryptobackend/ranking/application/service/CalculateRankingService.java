@@ -14,7 +14,6 @@ import ksh.tryptobackend.ranking.domain.vo.RoundKey;
 import ksh.tryptobackend.ranking.domain.vo.SnapshotSummaries;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -31,7 +30,6 @@ public class CalculateRankingService implements CalculateRankingUseCase {
     private final RankingWritePort rankingWritePort;
 
     @Override
-    @Transactional
     public void calculateRanking(CalculateRankingCommand command) {
         LocalDate snapshotDate = command.snapshotDate();
 
@@ -46,7 +44,7 @@ public class CalculateRankingService implements CalculateRankingUseCase {
             SnapshotSummaries comparison = loadSummariesOf(snapshotDate.minusDays(period.getWindowDays()));
             RankingCandidates candidates = eligibleRounds.toCandidates(todaySummaries, comparison);
             List<Ranking> rankings = candidates.toRankings(period, snapshotDate);
-            saveForPeriod(rankings, period, snapshotDate);
+            rankingWritePort.replaceByPeriodAndDate(rankings, period, snapshotDate);
         }
     }
 
@@ -63,8 +61,4 @@ public class CalculateRankingService implements CalculateRankingUseCase {
         return new SnapshotSummaries(totalAssetMap);
     }
 
-    private void saveForPeriod(List<Ranking> rankings, RankingPeriod period, LocalDate referenceDate) {
-        rankingWritePort.deleteByPeriodAndDate(period, referenceDate);
-        rankingWritePort.saveAll(rankings);
-    }
 }

@@ -8,7 +8,5 @@ import java.util.List;
 
 public interface RankingWritePort {
 
-    void deleteByPeriodAndDate(RankingPeriod period, LocalDate referenceDate);
-
-    void saveAll(List<Ranking> rankings);
+    void replaceByPeriodAndDate(List<Ranking> rankings, RankingPeriod period, LocalDate referenceDate);
 }
