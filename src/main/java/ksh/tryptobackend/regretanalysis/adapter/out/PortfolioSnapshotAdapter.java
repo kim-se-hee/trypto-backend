@@ -1,5 +1,7 @@
 package ksh.tryptobackend.regretanalysis.adapter.out;
 
+import ksh.tryptobackend.common.exception.CustomException;
+import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotInfo;
 import ksh.tryptobackend.regretanalysis.application.port.out.PortfolioSnapshotPort;
@@ -19,8 +21,7 @@ public class PortfolioSnapshotAdapter implements PortfolioSnapshotPort {
     public AssetSnapshot getLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
         return snapshotQueryPort.findLatestByRoundIdAndExchangeId(roundId, exchangeId)
             .map(this::toAssetSnapshot)
-            .orElseThrow(() -> new IllegalStateException(
-                "스냅샷이 존재해야 하지만 찾을 수 없습니다: roundId=" + roundId + ", exchangeId=" + exchangeId));
+            .orElseThrow(() -> new CustomException(ErrorCode.SNAPSHOT_NOT_FOUND));
     }
 
     @Override
