@@ -7,4 +7,6 @@ import java.util.List;
 public interface WalletSnapshotPort {
 
     List<WalletSnapshotInfo> findByRoundId(Long roundId);
+
+    List<WalletSnapshotInfo> findByRoundIds(List<Long> roundIds);
 }

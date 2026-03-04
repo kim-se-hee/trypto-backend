@@ -17,7 +17,18 @@ public class WalletSnapshotAdapter implements WalletSnapshotPort {
     @Override
     public List<WalletSnapshotInfo> findByRoundId(Long roundId) {
         return walletQueryPort.findByRoundId(roundId).stream()
-            .map(info -> new WalletSnapshotInfo(info.walletId(), info.roundId(), info.exchangeId(), info.seedAmount()))
+            .map(this::toWalletSnapshotInfo)
             .toList();
+    }
+
+    @Override
+    public List<WalletSnapshotInfo> findByRoundIds(List<Long> roundIds) {
+        return walletQueryPort.findByRoundIds(roundIds).stream()
+            .map(this::toWalletSnapshotInfo)
+            .toList();
+    }
+
+    private WalletSnapshotInfo toWalletSnapshotInfo(ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo info) {
+        return new WalletSnapshotInfo(info.walletId(), info.roundId(), info.exchangeId(), info.seedAmount());
     }
 }
