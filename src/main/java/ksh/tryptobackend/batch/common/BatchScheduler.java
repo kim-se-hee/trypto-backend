@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -35,27 +37,69 @@ public class BatchScheduler {
             .addLong("run.id", System.currentTimeMillis())
             .toJobParameters();
 
-        try {
-            log.info("배치 시작: snapshotDate={}", snapshotDate);
+        log.info("배치 시작: snapshotDate={}", snapshotDate);
 
+        if (!runSnapshotJob(params, snapshotDate)) {
+            return;
+        }
+
+        runParallelJobs(params, snapshotDate);
+    }
+
+    private boolean runSnapshotJob(JobParameters params, LocalDate snapshotDate) {
+        try {
             jobOperator.start(snapshotJob, params);
             log.info("SnapshotJob 완료");
-
-            CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> runJob(regretReportJob, params), batchTaskExecutor),
-                CompletableFuture.runAsync(() -> runJob(rankingJob, params), batchTaskExecutor)
-            ).join();
-
-            log.info("배치 완료: snapshotDate={}", snapshotDate);
+            return true;
         } catch (Exception e) {
-            log.error("배치 실패: snapshotDate={}", snapshotDate, e);
+            log.error("SnapshotJob 실패 — 후속 배치 중단: snapshotDate={}", snapshotDate, e);
+            return false;
         }
+    }
+
+    private void runParallelJobs(JobParameters params, LocalDate snapshotDate) {
+        CompletableFuture<String> regretFuture = CompletableFuture
+            .runAsync(() -> runJob(regretReportJob, params), batchTaskExecutor)
+            .handle((result, ex) -> handleJobResult(regretReportJob.getName(), ex));
+
+        CompletableFuture<String> rankingFuture = CompletableFuture
+            .runAsync(() -> runJob(rankingJob, params), batchTaskExecutor)
+            .handle((result, ex) -> handleJobResult(rankingJob.getName(), ex));
+
+        CompletableFuture.allOf(regretFuture, rankingFuture).join();
+
+        List<String> failedJobs = collectFailures(regretFuture, rankingFuture);
+        if (failedJobs.isEmpty()) {
+            log.info("배치 완료: snapshotDate={}", snapshotDate);
+        } else {
+            log.error("배치 부분 실패: snapshotDate={}, failedJobs={}", snapshotDate, failedJobs);
+        }
+    }
+
+    private String handleJobResult(String jobName, Throwable ex) {
+        if (ex != null) {
+            log.error("{} 실패", jobName, ex);
+            return jobName;
+        }
+        log.info("{} 완료", jobName);
+        return null;
+    }
+
+    @SafeVarargs
+    private List<String> collectFailures(CompletableFuture<String>... futures) {
+        List<String> failedJobs = new ArrayList<>();
+        for (CompletableFuture<String> future : futures) {
+            String failedJobName = future.join();
+            if (failedJobName != null) {
+                failedJobs.add(failedJobName);
+            }
+        }
+        return failedJobs;
     }
 
     private void runJob(Job job, JobParameters params) {
         try {
             jobOperator.start(job, params);
-            log.info("{} 완료", job.getName());
         } catch (Exception e) {
             throw new RuntimeException(job.getName() + " 실패", e);
         }

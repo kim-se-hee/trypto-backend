@@ -9,6 +9,8 @@ import org.springframework.batch.core.step.StepContribution;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.infrastructure.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 public class RankingTasklet implements Tasklet {
 
     private final CalculateRankingUseCase calculateRankingUseCase;
+    private final RetryPolicy batchRetryPolicy;
 
     @Value("#{jobParameters['snapshotDate']}")
     private String snapshotDateParam;
@@ -26,7 +29,10 @@ public class RankingTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) {
         LocalDate snapshotDate = LocalDate.parse(snapshotDateParam);
-        calculateRankingUseCase.calculateRanking(new CalculateRankingCommand(snapshotDate));
+        RetryTemplate retryTemplate = new RetryTemplate(batchRetryPolicy);
+        retryTemplate.invoke(() ->
+            calculateRankingUseCase.calculateRanking(new CalculateRankingCommand(snapshotDate))
+        );
         return RepeatStatus.FINISHED;
     }
 }
