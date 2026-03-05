@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 public interface TransferWalletPort {
 
-    void validateOwnership(Long walletId, Long userId);
+    Long getOwnerUserId(Long walletId);
 
     TransferWalletInfo getWallet(Long walletId);
 
