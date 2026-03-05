@@ -4,7 +4,6 @@ import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.job.parameters.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -32,7 +31,6 @@ public class RegretReportJobConfig {
     @Bean
     public Job regretReportJob(Step regretReportStep) {
         return new JobBuilder("regret-report-job", jobRepository)
-            .incrementer(new RunIdIncrementer())
             .start(regretReportStep)
             .build();
     }

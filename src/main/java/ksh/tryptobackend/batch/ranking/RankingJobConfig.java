@@ -3,7 +3,6 @@ package ksh.tryptobackend.batch.ranking;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.job.parameters.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -21,7 +20,6 @@ public class RankingJobConfig {
     @Bean
     public Job rankingJob(Step rankingStep) {
         return new JobBuilder("ranking-job", jobRepository)
-            .incrementer(new RunIdIncrementer())
             .start(rankingStep)
             .build();
     }
