@@ -9,6 +9,8 @@ import ksh.tryptobackend.acceptance.testclient.CommonApiClient;
 import ksh.tryptobackend.transfer.adapter.out.entity.TransferJpaEntity;
 import ksh.tryptobackend.transfer.adapter.out.repository.TransferJpaRepository;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
+import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
+import ksh.tryptobackend.transfer.domain.vo.TransferStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -55,24 +57,48 @@ public class TransferHistoryStepDefinition {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // WITHDRAW: WALLET_ID -> OTHER_WALLET_ID
-        saveTransfer(Transfer.success(
-            UUID.randomUUID(), WALLET_ID, OTHER_WALLET_ID,
-            COIN_ID, "ERC-20", "0xabc123", null,
-            new BigDecimal("0.01"), new BigDecimal("0.0005"), now.minusHours(3)));
+        // WITHDRAW: WALLET_ID -> OTHER_WALLET_ID (SUCCESS)
+        saveTransfer(Transfer.builder()
+            .idempotencyKey(UUID.randomUUID())
+            .fromWalletId(WALLET_ID)
+            .toWalletId(OTHER_WALLET_ID)
+            .coinId(COIN_ID)
+            .chain("ERC-20")
+            .toAddress("0xabc123")
+            .amount(new BigDecimal("0.01"))
+            .fee(new BigDecimal("0.0005"))
+            .status(TransferStatus.SUCCESS)
+            .createdAt(now.minusHours(3))
+            .build());
 
-        // DEPOSIT: OTHER_WALLET_ID -> WALLET_ID
-        saveTransfer(Transfer.success(
-            UUID.randomUUID(), OTHER_WALLET_ID, WALLET_ID,
-            COIN_ID, "Bitcoin", "bc1qxyz", null,
-            new BigDecimal("0.005"), new BigDecimal("0.0003"), now.minusHours(2)));
+        // DEPOSIT: OTHER_WALLET_ID -> WALLET_ID (SUCCESS)
+        saveTransfer(Transfer.builder()
+            .idempotencyKey(UUID.randomUUID())
+            .fromWalletId(OTHER_WALLET_ID)
+            .toWalletId(WALLET_ID)
+            .coinId(COIN_ID)
+            .chain("Bitcoin")
+            .toAddress("bc1qxyz")
+            .amount(new BigDecimal("0.005"))
+            .fee(new BigDecimal("0.0003"))
+            .status(TransferStatus.SUCCESS)
+            .createdAt(now.minusHours(2))
+            .build());
 
-        // WITHDRAW: WALLET_ID -> OTHER_WALLET_ID (FROZEN)
-        saveTransfer(Transfer.frozen(
-            UUID.randomUUID(), WALLET_ID,
-            COIN_ID, "ERC-20", "0xinvalid", null,
-            new BigDecimal("0.008"), new BigDecimal("0.0005"),
-            ksh.tryptobackend.transfer.domain.vo.TransferFailureReason.WRONG_ADDRESS, now.minusHours(1)));
+        // WITHDRAW: WALLET_ID -> (FROZEN)
+        saveTransfer(Transfer.builder()
+            .idempotencyKey(UUID.randomUUID())
+            .fromWalletId(WALLET_ID)
+            .coinId(COIN_ID)
+            .chain("ERC-20")
+            .toAddress("0xinvalid")
+            .amount(new BigDecimal("0.008"))
+            .fee(new BigDecimal("0.0005"))
+            .status(TransferStatus.FROZEN)
+            .failureReason(TransferFailureReason.WRONG_ADDRESS)
+            .frozenUntil(now.minusHours(1).plusHours(24))
+            .createdAt(now.minusHours(1))
+            .build());
 
         walletId = WALLET_ID;
     }
