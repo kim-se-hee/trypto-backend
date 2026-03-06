@@ -1,9 +1,9 @@
 package ksh.tryptobackend.investmentround.adapter.out;
 
 import ksh.tryptobackend.investmentround.application.port.out.FundingWalletPort;
-import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
-import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
+import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
+import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
+import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +14,17 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FundingWalletAdapter implements FundingWalletPort {
 
-    private final WalletQueryPort walletQueryPort;
-    private final WalletBalanceOperationPort walletBalanceOperationPort;
+    private final FindWalletUseCase findWalletUseCase;
+    private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
 
     @Override
     public Optional<Long> findWalletId(Long roundId, Long exchangeId) {
-        return walletQueryPort.findByRoundIdAndExchangeId(roundId, exchangeId)
-            .map(WalletInfo::walletId);
+        return findWalletUseCase.findByRoundIdAndExchangeId(roundId, exchangeId)
+            .map(WalletResult::walletId);
     }
 
     @Override
     public void addBalance(Long walletId, Long coinId, BigDecimal amount) {
-        walletBalanceOperationPort.addBalance(walletId, coinId, amount);
+        manageWalletBalanceUseCase.addBalance(walletId, coinId, amount);
     }
 }
