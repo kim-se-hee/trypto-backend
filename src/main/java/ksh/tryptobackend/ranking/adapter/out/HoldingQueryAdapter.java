@@ -5,8 +5,8 @@ import ksh.tryptobackend.ranking.application.port.out.HoldingQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.LivePricePort;
 import ksh.tryptobackend.ranking.domain.model.EvaluatedHolding;
 import ksh.tryptobackend.ranking.domain.model.EvaluatedHoldings;
-import ksh.tryptobackend.trading.application.port.out.HoldingPersistencePort;
-import ksh.tryptobackend.trading.domain.model.Holding;
+import ksh.tryptobackend.trading.application.port.in.FindActiveHoldingsUseCase;
+import ksh.tryptobackend.trading.application.port.in.dto.result.HoldingInfoResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,21 +19,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class HoldingQueryAdapter implements HoldingQueryPort {
 
-    private final HoldingPersistencePort holdingPersistencePort;
+    private final FindActiveHoldingsUseCase findActiveHoldingsUseCase;
     private final ExchangeCoinQueryPort exchangeCoinQueryPort;
     private final LivePricePort livePricePort;
 
     @Override
     public EvaluatedHoldings findAllByWalletId(Long walletId, Long exchangeId) {
-        List<Holding> activeHoldings = holdingPersistencePort.findAllByWalletId(walletId).stream()
-            .filter(Holding::isHolding)
-            .toList();
+        List<HoldingInfoResult> activeHoldings = findActiveHoldingsUseCase.findActiveHoldings(walletId);
 
         if (activeHoldings.isEmpty()) {
             return new EvaluatedHoldings(List.of());
         }
 
-        List<Long> coinIds = activeHoldings.stream().map(Holding::getCoinId).toList();
+        List<Long> coinIds = activeHoldings.stream().map(HoldingInfoResult::coinId).toList();
         Map<Long, Long> coinToExchangeCoinMap = exchangeCoinQueryPort.findExchangeCoinIdsByExchangeIdAndCoinIds(exchangeId, coinIds);
         Map<Long, BigDecimal> priceMap = livePricePort.getCurrentPrices(new ArrayList<>(coinToExchangeCoinMap.values()));
 
@@ -43,14 +41,14 @@ public class HoldingQueryAdapter implements HoldingQueryPort {
         return new EvaluatedHoldings(holdings);
     }
 
-    private EvaluatedHolding toEvaluatedHolding(Holding holding, Map<Long, Long> coinToExchangeCoinMap,
+    private EvaluatedHolding toEvaluatedHolding(HoldingInfoResult holding, Map<Long, Long> coinToExchangeCoinMap,
                                                  Map<Long, BigDecimal> priceMap) {
-        Long exchangeCoinId = coinToExchangeCoinMap.get(holding.getCoinId());
+        Long exchangeCoinId = coinToExchangeCoinMap.get(holding.coinId());
         BigDecimal currentPrice = exchangeCoinId != null
             ? priceMap.getOrDefault(exchangeCoinId, BigDecimal.ZERO)
             : BigDecimal.ZERO;
         return EvaluatedHolding.create(
-            holding.getCoinId(), holding.getAvgBuyPrice(),
-            holding.getTotalQuantity(), currentPrice);
+            holding.coinId(), holding.avgBuyPrice(),
+            holding.totalQuantity(), currentPrice);
     }
 }
