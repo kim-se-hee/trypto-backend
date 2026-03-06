@@ -1,8 +1,7 @@
 package ksh.tryptobackend.regretanalysis.adapter.out;
 
-import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
-import ksh.tryptobackend.trading.application.port.out.dto.OrderInfo;
-import ksh.tryptobackend.trading.domain.vo.Side;
+import ksh.tryptobackend.trading.application.port.in.FindFilledOrdersUseCase;
+import ksh.tryptobackend.trading.application.port.in.dto.result.FilledOrderResult;
 import ksh.tryptobackend.regretanalysis.application.port.out.OrderHistoryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeRecord;
 import ksh.tryptobackend.regretanalysis.domain.vo.TradeSide;
@@ -16,34 +15,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderHistoryAdapter implements OrderHistoryPort {
 
-    private final OrderQueryPort orderQueryPort;
+    private final FindFilledOrdersUseCase findFilledOrdersUseCase;
 
     @Override
     public List<TradeRecord> findByOrderIds(List<Long> orderIds) {
-        return orderQueryPort.findFilledByOrderIds(orderIds).stream()
+        return findFilledOrdersUseCase.findByOrderIds(orderIds).stream()
             .map(this::toTradeRecord)
             .toList();
     }
 
     @Override
     public List<TradeRecord> findSellOrdersAfter(Long walletId, Long exchangeCoinId, LocalDateTime after) {
-        return orderQueryPort.findFilledSellOrders(walletId, exchangeCoinId, after).stream()
+        return findFilledOrdersUseCase.findSellOrders(walletId, exchangeCoinId, after).stream()
             .map(this::toTradeRecord)
             .toList();
     }
 
-    private TradeRecord toTradeRecord(OrderInfo info) {
+    private TradeRecord toTradeRecord(FilledOrderResult result) {
         return new TradeRecord(
-            info.orderId(), info.walletId(), info.exchangeCoinId(),
-            toTradeSide(info.side()),
-            info.amount(), info.quantity(), info.filledPrice(), info.filledAt()
+            result.orderId(), result.walletId(), result.exchangeCoinId(),
+            TradeSide.valueOf(result.side()),
+            result.amount(), result.quantity(), result.filledPrice(), result.filledAt()
         );
-    }
-
-    private TradeSide toTradeSide(Side side) {
-        return switch (side) {
-            case BUY -> TradeSide.BUY;
-            case SELL -> TradeSide.SELL;
-        };
     }
 }
