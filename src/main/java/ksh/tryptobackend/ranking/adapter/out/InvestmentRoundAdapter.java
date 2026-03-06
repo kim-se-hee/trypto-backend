@@ -1,6 +1,6 @@
 package ksh.tryptobackend.ranking.adapter.out;
 
-import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundQueryPort;
+import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
 import ksh.tryptobackend.ranking.application.port.out.InvestmentRoundPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RoundInfo;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +12,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InvestmentRoundAdapter implements InvestmentRoundPort {
 
-    private final InvestmentRoundQueryPort investmentRoundQueryPort;
+    private final FindRoundInfoUseCase findRoundInfoUseCase;
 
     @Override
     public Optional<RoundInfo> findActiveRoundByUserId(Long userId) {
-        return investmentRoundQueryPort.findActiveRoundByUserId(userId)
-            .map(info -> new RoundInfo(info.roundId(), info.userId()));
+        return findRoundInfoUseCase.findActiveByUserId(userId)
+            .map(result -> new RoundInfo(result.roundId(), result.userId()));
     }
 }

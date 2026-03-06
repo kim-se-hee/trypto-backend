@@ -1,6 +1,6 @@
 package ksh.tryptobackend.ranking.adapter.out;
 
-import ksh.tryptobackend.investmentround.application.port.out.EmergencyFundingQueryPort;
+import ksh.tryptobackend.investmentround.application.port.in.SumEmergencyFundingUseCase;
 import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,10 +11,10 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class EmergencyFundingSnapshotAdapter implements EmergencyFundingSnapshotPort {
 
-    private final EmergencyFundingQueryPort emergencyFundingQueryPort;
+    private final SumEmergencyFundingUseCase sumEmergencyFundingUseCase;
 
     @Override
     public BigDecimal sumByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
-        return emergencyFundingQueryPort.sumAmountByRoundIdAndExchangeId(roundId, exchangeId);
+        return sumEmergencyFundingUseCase.sumByRoundIdAndExchangeId(roundId, exchangeId);
     }
 }
