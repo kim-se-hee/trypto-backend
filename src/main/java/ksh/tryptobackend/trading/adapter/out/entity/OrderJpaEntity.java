@@ -70,6 +70,10 @@ public class OrderJpaEntity {
     @Column(name = "filled_at")
     private LocalDateTime filledAt;
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "order_id")
+    private java.util.List<RuleViolationJpaEntity> violations = new java.util.ArrayList<>();
+
     public static OrderJpaEntity fromDomain(Order order) {
         OrderJpaEntity entity = new OrderJpaEntity();
         entity.id = order.getId();
@@ -87,16 +91,24 @@ public class OrderJpaEntity {
         entity.status = order.getStatus();
         entity.createdAt = order.getCreatedAt();
         entity.filledAt = order.getFilledAt();
+        entity.violations = order.getViolations().stream()
+            .map(v -> RuleViolationJpaEntity.fromOrderViolation(order.getId(), v))
+            .toList();
         return entity;
     }
 
     public Order toDomain() {
         Fee domainFee = (fee != null && feeRate != null) ? Fee.of(fee, feeRate) : null;
+        java.util.List<ksh.tryptobackend.trading.domain.model.RuleViolation> domainViolations =
+            violations.stream()
+                .map(v -> new ksh.tryptobackend.trading.domain.model.RuleViolation(
+                    v.getRuleId(), v.getViolationReason(), v.getCreatedAt()))
+                .toList();
         return Order.reconstitute(
             id, idempotencyKey, walletId, exchangeCoinId,
             side, orderType, amount, new Quantity(quantity),
             price, filledPrice, domainFee, status,
-            createdAt, filledAt
+            createdAt, filledAt, domainViolations
         );
     }
 }
