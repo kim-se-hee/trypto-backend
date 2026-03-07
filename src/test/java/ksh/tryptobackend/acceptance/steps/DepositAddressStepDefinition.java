@@ -13,6 +13,7 @@ import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
 import ksh.tryptobackend.wallet.domain.model.Wallet;
 import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +63,7 @@ public class DepositAddressStepDefinition {
     public void 입금_주소용_거래소와_지갑이_준비되어_있다() {
         exchangeAdapter.addExchange(EXCHANGE_ID, DepositTargetExchange.of(KRW_COIN_ID, true));
 
-        Wallet wallet = Wallet.create(ROUND_ID, EXCHANGE_ID, LocalDateTime.now());
+        Wallet wallet = Wallet.create(ROUND_ID, EXCHANGE_ID, BigDecimal.ZERO, LocalDateTime.now());
         WalletJpaEntity walletEntity = WalletJpaEntity.fromDomain(wallet);
         walletId = walletJpaRepository.save(walletEntity).getId();
     }
