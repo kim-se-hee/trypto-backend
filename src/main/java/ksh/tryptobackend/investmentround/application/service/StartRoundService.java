@@ -8,7 +8,7 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRo
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundSeedCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundRuleResult;
-import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoPort;
+import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.ExchangeInfo;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
@@ -30,7 +30,7 @@ import java.util.List;
 public class StartRoundService implements StartRoundUseCase {
 
     private final InvestmentRoundCommandPort investmentRoundCommandPort;
-    private final ExchangeInfoPort exchangeInfoPort;
+    private final ExchangeInfoQueryPort exchangeInfoPort;
     private final WalletCommandPort walletCommandPort;
     private final Clock clock;
 

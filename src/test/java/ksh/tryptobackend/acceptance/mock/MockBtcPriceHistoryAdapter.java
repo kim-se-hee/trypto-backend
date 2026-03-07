@@ -1,6 +1,6 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.vo.BtcDailyPrice;
 
 import java.math.BigDecimal;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockBtcPriceHistoryAdapter implements BtcPriceHistoryPort {
+public class MockBtcPriceHistoryAdapter implements BtcPriceHistoryQueryPort {
 
     private final Map<String, BigDecimal> prices = new ConcurrentHashMap<>();
 

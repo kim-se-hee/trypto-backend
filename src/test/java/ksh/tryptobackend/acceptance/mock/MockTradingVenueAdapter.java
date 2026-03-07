@@ -1,13 +1,13 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.trading.application.port.out.TradingVenuePort;
+import ksh.tryptobackend.trading.application.port.out.TradingVenueQueryPort;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockTradingVenueAdapter implements TradingVenuePort {
+public class MockTradingVenueAdapter implements TradingVenueQueryPort {
 
     private final Map<Long, TradingVenue> venues = new ConcurrentHashMap<>();
 

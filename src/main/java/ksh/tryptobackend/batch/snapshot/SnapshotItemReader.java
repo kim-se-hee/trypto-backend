@@ -1,7 +1,7 @@
 package ksh.tryptobackend.batch.snapshot;
 
 import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotQueryPort;
 import ksh.tryptobackend.ranking.domain.vo.ActiveRound;
 import ksh.tryptobackend.ranking.domain.vo.WalletSnapshot;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class SnapshotItemReader implements ItemReader<SnapshotInput> {
 
     private final ActiveRoundQueryPort activeRoundQueryPort;
-    private final WalletSnapshotPort walletSnapshotPort;
+    private final WalletSnapshotQueryPort walletSnapshotPort;
 
     private Iterator<SnapshotInput> iterator;
 

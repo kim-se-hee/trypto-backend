@@ -1,13 +1,13 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangePort;
+import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangeQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.vo.ActiveRoundExchange;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MockActiveRoundListAdapter implements ActiveRoundExchangePort {
+public class MockActiveRoundListAdapter implements ActiveRoundExchangeQueryPort {
 
     private final List<ActiveRoundExchange> roundExchanges = new ArrayList<>();
 

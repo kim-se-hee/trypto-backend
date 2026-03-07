@@ -2,13 +2,14 @@ package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
+import ksh.tryptobackend.trading.application.port.out.WalletBalanceCommandPort;
+import ksh.tryptobackend.trading.application.port.out.WalletBalanceQueryPort;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockWalletBalanceAdapter implements WalletBalancePort {
+public class MockWalletBalanceAdapter implements WalletBalanceQueryPort, WalletBalanceCommandPort {
 
     private final Map<String, BigDecimal> availableBalances = new ConcurrentHashMap<>();
     private final Map<String, BigDecimal> lockedBalances = new ConcurrentHashMap<>();

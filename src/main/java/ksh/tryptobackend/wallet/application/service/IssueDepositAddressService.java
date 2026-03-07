@@ -4,9 +4,10 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.wallet.application.port.in.IssueDepositAddressUseCase;
 import ksh.tryptobackend.wallet.application.port.in.dto.command.IssueDepositAddressCommand;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainPort;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangePort;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressPersistencePort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainQueryPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeQueryPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressCommandPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressChainInfo;
 import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
@@ -22,9 +23,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class IssueDepositAddressService implements IssueDepositAddressUseCase {
 
     private final WalletQueryPort walletQueryPort;
-    private final DepositAddressExchangePort exchangePort;
-    private final DepositAddressExchangeCoinChainPort chainPort;
-    private final DepositAddressPersistencePort depositAddressPersistencePort;
+    private final DepositAddressExchangeQueryPort exchangePort;
+    private final DepositAddressExchangeCoinChainQueryPort chainPort;
+    private final DepositAddressCommandPort depositAddressCommandPort;
+    private final DepositAddressQueryPort depositAddressQueryPort;
     private final TransactionTemplate transactionTemplate;
 
     @Override
@@ -32,7 +34,7 @@ public class IssueDepositAddressService implements IssueDepositAddressUseCase {
         WalletInfo wallet = getWallet(command.walletId());
         validateTransferable(wallet.exchangeId(), command.coinId());
 
-        return depositAddressPersistencePort.findByWalletIdAndChain(command.walletId(), command.chain())
+        return depositAddressQueryPort.findByWalletIdAndChain(command.walletId(), command.chain())
             .orElseGet(() -> createDepositAddress(wallet.exchangeId(), command));
     }
 
@@ -47,10 +49,10 @@ public class IssueDepositAddressService implements IssueDepositAddressUseCase {
 
         try {
             return transactionTemplate.execute(status ->
-                depositAddressPersistencePort.save(
+                depositAddressCommandPort.save(
                     DepositAddress.create(command.walletId(), command.chain(), chainInfo.tagRequired())));
         } catch (DataIntegrityViolationException e) {
-            return depositAddressPersistencePort.findByWalletIdAndChain(command.walletId(), command.chain())
+            return depositAddressQueryPort.findByWalletIdAndChain(command.walletId(), command.chain())
                 .orElseThrow(() -> new CustomException(ErrorCode.CONCURRENT_MODIFICATION));
         }
     }

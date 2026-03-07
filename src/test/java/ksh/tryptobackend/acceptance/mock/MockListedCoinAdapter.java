@@ -1,13 +1,13 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.trading.application.port.out.ListedCoinPort;
+import ksh.tryptobackend.trading.application.port.out.ListedCoinQueryPort;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockListedCoinAdapter implements ListedCoinPort {
+public class MockListedCoinAdapter implements ListedCoinQueryPort {
 
     private final Map<Long, ListedCoinRef> listedCoins = new ConcurrentHashMap<>();
 

@@ -4,8 +4,8 @@ import ksh.tryptobackend.ranking.application.port.in.TakePortfolioSnapshotUseCas
 import ksh.tryptobackend.ranking.application.port.in.dto.command.TakeSnapshotCommand;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.SnapshotResult;
 import ksh.tryptobackend.ranking.application.port.out.BalanceQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotPort;
-import ksh.tryptobackend.ranking.application.port.out.ExchangeSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.ExchangeSnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.EvaluatedHoldingQueryPort;
 import ksh.tryptobackend.ranking.domain.model.EvaluatedHoldings;
 import ksh.tryptobackend.ranking.domain.model.PortfolioSnapshot;
@@ -21,10 +21,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TakePortfolioSnapshotService implements TakePortfolioSnapshotUseCase {
 
-    private final ExchangeSnapshotPort exchangeSnapshotPort;
+    private final ExchangeSnapshotQueryPort exchangeSnapshotPort;
     private final BalanceQueryPort balanceQueryPort;
     private final EvaluatedHoldingQueryPort evaluatedHoldingQueryPort;
-    private final EmergencyFundingSnapshotPort emergencyFundingSnapshotPort;
+    private final EmergencyFundingSnapshotQueryPort emergencyFundingSnapshotPort;
 
     @Override
     public SnapshotResult takeSnapshot(TakeSnapshotCommand command) {

@@ -11,16 +11,14 @@ import ksh.tryptobackend.acceptance.mock.MockViolationRuleAdapter;
 import ksh.tryptobackend.acceptance.mock.MockTradingVenueAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockTransferWalletAdapter;
-import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
-import ksh.tryptobackend.trading.application.port.out.ListedCoinPort;
-import ksh.tryptobackend.trading.application.port.out.ViolationRulePort;
-import ksh.tryptobackend.trading.application.port.out.LivePricePort;
+import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
+import ksh.tryptobackend.trading.application.port.out.ListedCoinQueryPort;
+import ksh.tryptobackend.trading.application.port.out.ViolationRuleQueryPort;
+import ksh.tryptobackend.trading.application.port.out.LivePriceQueryPort;
 import ksh.tryptobackend.trading.application.port.out.PriceChangeRatePort;
-import ksh.tryptobackend.trading.application.port.out.TradingVenuePort;
-import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
-import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainPort;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangePort;
+import ksh.tryptobackend.trading.application.port.out.TradingVenueQueryPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainQueryPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeQueryPort;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -30,25 +28,25 @@ public class MockAdapterConfiguration {
 
     @Bean
     @Primary
-    public WalletBalancePort walletBalancePort() {
+    public MockWalletBalanceAdapter mockWalletBalanceAdapter() {
         return new MockWalletBalanceAdapter();
     }
 
     @Bean
     @Primary
-    public LivePricePort livePricePort() {
+    public LivePriceQueryPort livePriceQueryPort() {
         return new MockLivePriceAdapter();
     }
 
     @Bean
     @Primary
-    public TradingVenuePort tradingVenuePort() {
+    public TradingVenueQueryPort tradingVenueQueryPort() {
         return new MockTradingVenueAdapter();
     }
 
     @Bean
     @Primary
-    public ListedCoinPort listedCoinPort() {
+    public ListedCoinQueryPort listedCoinQueryPort() {
         return new MockListedCoinAdapter();
     }
 
@@ -60,7 +58,7 @@ public class MockAdapterConfiguration {
 
     @Bean
     @Primary
-    public ViolationRulePort violationRulePort() {
+    public ViolationRuleQueryPort violationRuleQueryPort() {
         return new MockViolationRuleAdapter();
     }
 
@@ -72,25 +70,25 @@ public class MockAdapterConfiguration {
 
     @Bean
     @Primary
-    public BtcPriceHistoryPort btcPriceHistoryPort() {
+    public BtcPriceHistoryQueryPort btcPriceHistoryPort() {
         return new MockBtcPriceHistoryAdapter();
     }
 
     @Bean
     @Primary
-    public DepositAddressExchangePort depositAddressExchangePort() {
+    public DepositAddressExchangeQueryPort depositAddressExchangeQueryPort() {
         return new MockDepositAddressExchangeAdapter();
     }
 
     @Bean
     @Primary
-    public DepositAddressExchangeCoinChainPort depositAddressExchangeCoinChainPort() {
+    public DepositAddressExchangeCoinChainQueryPort depositAddressExchangeCoinChainQueryPort() {
         return new MockDepositAddressExchangeCoinChainAdapter();
     }
 
     @Bean
     @Primary
-    public TransferWalletPort transferWalletPort() {
+    public MockTransferWalletAdapter mockTransferWalletAdapter() {
         return new MockTransferWalletAdapter();
     }
 }

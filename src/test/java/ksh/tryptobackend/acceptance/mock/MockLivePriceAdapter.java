@@ -1,12 +1,12 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.trading.application.port.out.LivePricePort;
+import ksh.tryptobackend.trading.application.port.out.LivePriceQueryPort;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockLivePriceAdapter implements LivePricePort {
+public class MockLivePriceAdapter implements LivePriceQueryPort {
 
     private final Map<Long, BigDecimal> prices = new ConcurrentHashMap<>();
 

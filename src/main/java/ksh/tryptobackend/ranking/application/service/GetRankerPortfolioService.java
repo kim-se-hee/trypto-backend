@@ -6,7 +6,7 @@ import ksh.tryptobackend.ranking.application.port.in.GetRankerPortfolioUseCase;
 import ksh.tryptobackend.ranking.application.port.in.dto.query.GetRankerPortfolioQuery;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.PortfolioHoldingResult;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.RankerPortfolioResult;
-import ksh.tryptobackend.ranking.application.port.out.ActiveRoundPort;
+import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
@@ -24,7 +24,7 @@ import java.util.List;
 public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
 
     private final RankingQueryPort rankingQueryPort;
-    private final ActiveRoundPort activeRoundPort;
+    private final ActiveRoundQueryPort activeRoundQueryPort;
     private final PortfolioSnapshotQueryPort portfolioSnapshotQueryPort;
 
     @Override
@@ -63,7 +63,7 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
     }
 
     private ActiveRound findActiveRound(Long userId) {
-        return activeRoundPort.findActiveRoundByUserId(userId)
+        return activeRoundQueryPort.findActiveRoundByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_ACTIVE));
     }
 

@@ -1,13 +1,13 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotQueryPort;
 import ksh.tryptobackend.ranking.domain.vo.WalletSnapshot;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MockWalletSnapshotAdapter implements WalletSnapshotPort {
+public class MockWalletSnapshotAdapter implements WalletSnapshotQueryPort {
 
     private final List<WalletSnapshot> wallets = new ArrayList<>();
 

@@ -6,8 +6,9 @@ import ksh.tryptobackend.investmentround.application.port.in.ChargeEmergencyFund
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.ChargeEmergencyFundingCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.ChargeEmergencyFundingResult;
 import ksh.tryptobackend.investmentround.application.port.out.EmergencyFundingQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoPort;
-import ksh.tryptobackend.investmentround.application.port.out.FundingWalletPort;
+import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoQueryPort;
+import ksh.tryptobackend.investmentround.application.port.out.FundingWalletCommandPort;
+import ksh.tryptobackend.investmentround.application.port.out.FundingWalletQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.ExchangeInfo;
 import ksh.tryptobackend.investmentround.domain.model.EmergencyFunding;
@@ -26,8 +27,9 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
 
     private final InvestmentRoundCommandPort investmentRoundCommandPort;
     private final EmergencyFundingQueryPort emergencyFundingQueryPort;
-    private final ExchangeInfoPort exchangeInfoPort;
-    private final FundingWalletPort fundingWalletPort;
+    private final ExchangeInfoQueryPort exchangeInfoPort;
+    private final FundingWalletQueryPort fundingWalletQueryPort;
+    private final FundingWalletCommandPort fundingWalletCommandPort;
     private final Clock clock;
 
     @Override
@@ -53,7 +55,7 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
         round.addFunding(funding);
 
         InvestmentRound savedRound = investmentRoundCommandPort.save(round);
-        fundingWalletPort.addBalance(walletId, exchange.baseCurrencyCoinId(), command.amount());
+        fundingWalletCommandPort.addBalance(walletId, exchange.baseCurrencyCoinId(), command.amount());
 
         EmergencyFunding savedFunding = savedRound.getFundings().stream()
             .filter(f -> command.idempotencyKey().equals(f.getIdempotencyKey()))
@@ -69,7 +71,7 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
     }
 
     private Long getWalletId(Long roundId, Long exchangeId) {
-        return fundingWalletPort.findWalletId(roundId, exchangeId)
+        return fundingWalletQueryPort.findWalletId(roundId, exchangeId)
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
     }
 
