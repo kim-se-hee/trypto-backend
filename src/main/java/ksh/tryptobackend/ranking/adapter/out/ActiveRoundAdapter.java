@@ -17,6 +17,6 @@ public class ActiveRoundAdapter implements ActiveRoundPort {
     @Override
     public Optional<ActiveRound> findActiveRoundByUserId(Long userId) {
         return findRoundInfoUseCase.findActiveByUserId(userId)
-            .map(result -> new ActiveRound(result.roundId(), result.userId()));
+            .map(result -> new ActiveRound(result.roundId(), result.userId(), result.startedAt()));
     }
 }

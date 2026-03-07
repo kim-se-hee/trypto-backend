@@ -1,4 +1,14 @@
 package ksh.tryptobackend.ranking.domain.vo;
 
-public record ActiveRound(Long roundId, Long userId) {
+import java.time.LocalDateTime;
+
+public record ActiveRound(Long roundId, Long userId, LocalDateTime startedAt) {
+
+    public boolean isStartedBefore(LocalDateTime cutoff) {
+        return startedAt.isBefore(cutoff);
+    }
+
+    public RoundKey roundKey() {
+        return new RoundKey(userId, roundId);
+    }
 }

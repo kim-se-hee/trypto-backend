@@ -2,7 +2,7 @@ package ksh.tryptobackend.batch.snapshot;
 
 import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotPort;
-import ksh.tryptobackend.ranking.domain.vo.ActiveRoundInfo;
+import ksh.tryptobackend.ranking.domain.vo.ActiveRound;
 import ksh.tryptobackend.ranking.domain.vo.WalletSnapshot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.infrastructure.item.ItemReader;
@@ -33,8 +33,8 @@ public class SnapshotItemReader implements ItemReader<SnapshotInput> {
     }
 
     private List<SnapshotInput> buildInputList() {
-        List<ActiveRoundInfo> activeRounds = activeRoundQueryPort.findAllActiveRounds();
-        List<Long> roundIds = activeRounds.stream().map(ActiveRoundInfo::roundId).toList();
+        List<ActiveRound> activeRounds = activeRoundQueryPort.findAllActiveRounds();
+        List<Long> roundIds = activeRounds.stream().map(ActiveRound::roundId).toList();
         Map<Long, List<WalletSnapshot>> walletsByRoundId = walletSnapshotPort.findByRoundIds(roundIds).stream()
             .collect(Collectors.groupingBy(WalletSnapshot::roundId));
 
@@ -44,7 +44,7 @@ public class SnapshotItemReader implements ItemReader<SnapshotInput> {
             .toList();
     }
 
-    private SnapshotInput toSnapshotInput(ActiveRoundInfo round, WalletSnapshot wallet) {
+    private SnapshotInput toSnapshotInput(ActiveRound round, WalletSnapshot wallet) {
         return new SnapshotInput(
             round.roundId(), round.userId(), wallet.exchangeId(),
             wallet.walletId(), wallet.seedAmount()
