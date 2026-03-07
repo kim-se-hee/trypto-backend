@@ -4,7 +4,7 @@ import ksh.tryptobackend.trading.application.port.in.FindOrderHistoryUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.query.FindOrderHistoryQuery;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryCursorResult;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryResult;
-import ksh.tryptobackend.trading.application.port.out.OrderPersistencePort;
+import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
 import ksh.tryptobackend.trading.domain.model.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FindOrderHistoryService implements FindOrderHistoryUseCase {
 
-    private final OrderPersistencePort orderPersistencePort;
+    private final OrderQueryPort orderQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -29,7 +29,7 @@ public class FindOrderHistoryService implements FindOrderHistoryUseCase {
     }
 
     private List<Order> fetchOrdersWithOverflow(FindOrderHistoryQuery query) {
-        return orderPersistencePort.findByCursor(
+        return orderQueryPort.findByCursor(
             query.walletId(), query.exchangeCoinId(), query.side(),
             query.status(), query.cursorOrderId(), query.size() + 1);
     }

@@ -5,7 +5,7 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.out.ListedCoinPort;
-import ksh.tryptobackend.trading.application.port.out.OrderPersistencePort;
+import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.application.port.out.TradingVenuePort;
 import ksh.tryptobackend.trading.application.port.out.WalletBalancePort;
 import ksh.tryptobackend.trading.domain.model.Order;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CancelOrderService implements CancelOrderUseCase {
 
-    private final OrderPersistencePort orderPersistencePort;
+    private final OrderCommandPort orderCommandPort;
     private final WalletBalancePort walletBalancePort;
     private final TradingVenuePort tradingVenuePort;
     private final ListedCoinPort listedCoinPort;
@@ -37,11 +37,11 @@ public class CancelOrderService implements CancelOrderUseCase {
         order.cancel();
         unlockBalance(order);
 
-        return orderPersistencePort.save(order);
+        return orderCommandPort.save(order);
     }
 
     private Order getOrder(Long orderId) {
-        return orderPersistencePort.findById(orderId)
+        return orderCommandPort.findById(orderId)
             .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
     }
 
