@@ -22,6 +22,7 @@ public enum ErrorCode {
     BELOW_MIN_WITHDRAWAL(400, "below.min.withdrawal"),
     ACTIVE_ROUND_EXISTS(409, "active.round.exists"),
     INVALID_SEED_AMOUNT(400, "invalid.seed.amount"),
+    DUPLICATE_EXCHANGE(400, "duplicate.exchange"),
     INVALID_EMERGENCY_FUNDING_LIMIT(400, "invalid.emergency.funding.limit"),
     INVALID_RULE_THRESHOLD(400, "invalid.rule.threshold"),
     EMERGENCY_FUNDING_DISABLED(400, "emergency.funding.disabled"),

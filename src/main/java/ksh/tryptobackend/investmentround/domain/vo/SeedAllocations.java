@@ -35,7 +35,7 @@ public class SeedAllocations {
         Set<Long> exchangeIds = new HashSet<>();
         for (SeedAllocation allocation : allocations) {
             if (!exchangeIds.add(allocation.exchangeId())) {
-                throw new CustomException(ErrorCode.INVALID_SEED_AMOUNT);
+                throw new CustomException(ErrorCode.DUPLICATE_EXCHANGE);
             }
         }
     }
