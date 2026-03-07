@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
-@Component
+@Component("portfolioBalanceQueryAdapter")
 @RequiredArgsConstructor
 public class BalanceQueryAdapter implements BalanceQueryPort {
 
