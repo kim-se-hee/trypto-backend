@@ -4,7 +4,6 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinChainUseCase;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressChainInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,9 +14,9 @@ public class DepositAddressExchangeCoinChainQueryAdapter implements DepositAddre
     private final FindExchangeCoinChainUseCase findExchangeCoinChainUseCase;
 
     @Override
-    public DepositAddressChainInfo getExchangeCoinChain(Long exchangeId, Long coinId, String chain) {
+    public boolean isTagRequired(Long exchangeId, Long coinId, String chain) {
         return findExchangeCoinChainUseCase.findByExchangeIdAndCoinIdAndChain(exchangeId, coinId, chain)
-            .map(result -> new DepositAddressChainInfo(result.tagRequired()))
+            .map(result -> result.tagRequired())
             .orElseThrow(() -> new CustomException(ErrorCode.UNSUPPORTED_CHAIN));
     }
 }

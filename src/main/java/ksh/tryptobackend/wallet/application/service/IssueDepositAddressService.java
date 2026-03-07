@@ -9,7 +9,6 @@ import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeQuery
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressCommandPort;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressChainInfo;
 import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
 import ksh.tryptobackend.wallet.domain.model.DepositAddress;
 import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
@@ -44,13 +43,12 @@ public class IssueDepositAddressService implements IssueDepositAddressUseCase {
     }
 
     private DepositAddress createDepositAddress(Long exchangeId, IssueDepositAddressCommand command) {
-        DepositAddressChainInfo chainInfo = chainPort.getExchangeCoinChain(
-            exchangeId, command.coinId(), command.chain());
+        boolean tagRequired = chainPort.isTagRequired(exchangeId, command.coinId(), command.chain());
 
         try {
             return transactionTemplate.execute(status ->
                 depositAddressCommandPort.save(
-                    DepositAddress.create(command.walletId(), command.chain(), chainInfo.tagRequired())));
+                    DepositAddress.create(command.walletId(), command.chain(), tagRequired)));
         } catch (DataIntegrityViolationException e) {
             return depositAddressQueryPort.findByWalletIdAndChain(command.walletId(), command.chain())
                 .orElseThrow(() -> new CustomException(ErrorCode.CONCURRENT_MODIFICATION));
