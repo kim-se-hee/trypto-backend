@@ -1,12 +1,11 @@
 package ksh.tryptobackend.trading.adapter.out;
 
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.querydsl.core.types.Projections;
 import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.entity.QOrderJpaEntity;
-import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
-import ksh.tryptobackend.trading.application.port.out.OrderPersistencePort;
 import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
 import ksh.tryptobackend.trading.application.port.out.dto.OrderInfo;
 import ksh.tryptobackend.trading.domain.model.Order;
@@ -15,40 +14,17 @@ import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import com.querydsl.core.Tuple;
-
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class OrderJpaPersistenceAdapter implements OrderPersistencePort, OrderQueryPort {
+public class OrderQueryAdapter implements OrderQueryPort {
 
-    private final OrderJpaRepository orderJpaRepository;
     private final JPAQueryFactory queryFactory;
-
-    @Override
-    public Order save(Order order) {
-        OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);
-        OrderJpaEntity saved = orderJpaRepository.save(entity);
-        return saved.toDomain();
-    }
-
-    @Override
-    public Optional<Order> findById(Long orderId) {
-        return orderJpaRepository.findById(orderId)
-            .map(OrderJpaEntity::toDomain);
-    }
-
-    @Override
-    public Optional<Order> findByIdempotencyKey(String idempotencyKey) {
-        return orderJpaRepository.findByIdempotencyKey(idempotencyKey)
-            .map(OrderJpaEntity::toDomain);
-    }
 
     @Override
     public List<Order> findByCursor(Long walletId, Long exchangeCoinId, Side side,
@@ -73,27 +49,6 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort, OrderQu
     }
 
     @Override
-    public long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to) {
-        return orderJpaRepository.countByWalletIdAndCreatedAtBetween(walletId, from, to);
-    }
-
-    private BooleanExpression exchangeCoinIdEq(QOrderJpaEntity order, Long exchangeCoinId) {
-        return exchangeCoinId != null ? order.exchangeCoinId.eq(exchangeCoinId) : null;
-    }
-
-    private BooleanExpression sideEq(QOrderJpaEntity order, Side side) {
-        return side != null ? order.side.eq(side) : null;
-    }
-
-    private BooleanExpression statusEq(QOrderJpaEntity order, OrderStatus status) {
-        return status != null ? order.status.eq(status) : null;
-    }
-
-    private BooleanExpression cursorLt(QOrderJpaEntity order, Long cursorOrderId) {
-        return cursorOrderId != null ? order.id.lt(cursorOrderId) : null;
-    }
-
-    @Override
     public List<OrderInfo> findFilledByOrderIds(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
             return Collections.emptyList();
@@ -114,12 +69,23 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort, OrderQu
 
     @Override
     public boolean existsFilledByWalletId(Long walletId) {
-        return orderJpaRepository.existsByWalletIdAndStatus(walletId, OrderStatus.FILLED);
+        QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
+        return queryFactory
+            .selectOne()
+            .from(o)
+            .where(o.walletId.eq(walletId), o.status.eq(OrderStatus.FILLED))
+            .fetchFirst() != null;
     }
 
     @Override
     public int countFilledByWalletId(Long walletId) {
-        return orderJpaRepository.countByWalletIdAndStatus(walletId, OrderStatus.FILLED);
+        QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
+        Long count = queryFactory
+            .select(o.count())
+            .from(o)
+            .where(o.walletId.eq(walletId), o.status.eq(OrderStatus.FILLED))
+            .fetchOne();
+        return count != null ? count.intValue() : 0;
     }
 
     @Override
@@ -163,5 +129,21 @@ public class OrderJpaPersistenceAdapter implements OrderPersistencePort, OrderQu
             )
             .orderBy(o.filledAt.asc())
             .fetch();
+    }
+
+    private BooleanExpression exchangeCoinIdEq(QOrderJpaEntity order, Long exchangeCoinId) {
+        return exchangeCoinId != null ? order.exchangeCoinId.eq(exchangeCoinId) : null;
+    }
+
+    private BooleanExpression sideEq(QOrderJpaEntity order, Side side) {
+        return side != null ? order.side.eq(side) : null;
+    }
+
+    private BooleanExpression statusEq(QOrderJpaEntity order, OrderStatus status) {
+        return status != null ? order.status.eq(status) : null;
+    }
+
+    private BooleanExpression cursorLt(QOrderJpaEntity order, Long cursorOrderId) {
+        return cursorOrderId != null ? order.id.lt(cursorOrderId) : null;
     }
 }
