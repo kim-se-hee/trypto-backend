@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,48 +43,38 @@ class InvestmentRoundTest {
             1L, 0L, new BigDecimal("1000"), new BigDecimal("100"), LocalDateTime.now());
         LocalDateTime endedAt = LocalDateTime.of(2026, 3, 1, 11, 40, 0);
 
-        InvestmentRound endedRound = round.end(endedAt);
+        round.end(endedAt);
 
-        assertThat(endedRound.getStatus()).isEqualTo(RoundStatus.ENDED);
-        assertThat(endedRound.getEndedAt()).isEqualTo(endedAt);
+        assertThat(round.getStatus()).isEqualTo(RoundStatus.ENDED);
+        assertThat(round.getEndedAt()).isEqualTo(endedAt);
     }
 
     @Test
     @DisplayName("Return same round when already ENDED")
     void end_alreadyEndedRound_returnsSameRound() {
         LocalDateTime endedAt = LocalDateTime.of(2026, 3, 1, 11, 40, 0);
-        InvestmentRound round = InvestmentRound.builder()
-            .roundId(1L)
-            .userId(1L)
-            .roundNumber(1L)
-            .initialSeed(new BigDecimal("1000"))
-            .emergencyFundingLimit(new BigDecimal("100"))
-            .emergencyChargeCount(3)
-            .status(RoundStatus.ENDED)
-            .startedAt(LocalDateTime.of(2026, 3, 1, 9, 0, 0))
-            .endedAt(endedAt)
-            .build();
+        InvestmentRound round = InvestmentRound.reconstitute(
+            1L, null, 1L, 1L,
+            new BigDecimal("1000"), new BigDecimal("100"), 3,
+            RoundStatus.ENDED,
+            LocalDateTime.of(2026, 3, 1, 9, 0, 0), endedAt,
+            List.of(), List.of());
 
-        InvestmentRound result = round.end(LocalDateTime.of(2026, 3, 1, 12, 0, 0));
+        round.end(LocalDateTime.of(2026, 3, 1, 12, 0, 0));
 
-        assertThat(result.getStatus()).isEqualTo(RoundStatus.ENDED);
-        assertThat(result.getEndedAt()).isEqualTo(endedAt);
+        assertThat(round.getStatus()).isEqualTo(RoundStatus.ENDED);
+        assertThat(round.getEndedAt()).isEqualTo(endedAt);
     }
 
     @Test
     @DisplayName("Throw when ending BANKRUPT round")
     void end_bankruptRound_throwsRoundNotActive() {
-        InvestmentRound round = InvestmentRound.builder()
-            .roundId(1L)
-            .userId(1L)
-            .roundNumber(1L)
-            .initialSeed(new BigDecimal("1000"))
-            .emergencyFundingLimit(new BigDecimal("100"))
-            .emergencyChargeCount(3)
-            .status(RoundStatus.BANKRUPT)
-            .startedAt(LocalDateTime.of(2026, 3, 1, 9, 0, 0))
-            .endedAt(null)
-            .build();
+        InvestmentRound round = InvestmentRound.reconstitute(
+            1L, null, 1L, 1L,
+            new BigDecimal("1000"), new BigDecimal("100"), 3,
+            RoundStatus.BANKRUPT,
+            LocalDateTime.of(2026, 3, 1, 9, 0, 0), null,
+            List.of(), List.of());
 
         assertThatThrownBy(() -> round.end(LocalDateTime.now()))
             .isInstanceOf(CustomException.class)
@@ -97,10 +88,10 @@ class InvestmentRoundTest {
         InvestmentRound round = InvestmentRound.start(
             1L, 0L, new BigDecimal("1000"), new BigDecimal("500000"), LocalDateTime.now());
 
-        InvestmentRound chargedRound = round.chargeEmergencyFunding(new BigDecimal("300000"));
+        round.chargeEmergencyFunding(new BigDecimal("300000"));
 
-        assertThat(chargedRound.getEmergencyChargeCount()).isEqualTo(2);
-        assertThat(chargedRound.getStatus()).isEqualTo(RoundStatus.ACTIVE);
+        assertThat(round.getEmergencyChargeCount()).isEqualTo(2);
+        assertThat(round.getStatus()).isEqualTo(RoundStatus.ACTIVE);
     }
 
     @Test

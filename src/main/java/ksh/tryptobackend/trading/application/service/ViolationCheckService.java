@@ -37,7 +37,7 @@ public class ViolationCheckService {
         ViolationCheckContext context = buildContext(
             order, walletId, exchangeCoinId, coinId, currentPrice);
 
-        return ViolationChecker.check(rules, context);
+        return new ViolationRules(rules).check(context);
     }
 
     private ViolationCheckContext buildContext(Order order, Long walletId,

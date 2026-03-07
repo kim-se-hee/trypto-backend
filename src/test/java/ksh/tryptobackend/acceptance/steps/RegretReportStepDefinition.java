@@ -165,15 +165,12 @@ public class RegretReportStepDefinition {
     }
 
     private Long insertRound() {
-        InvestmentRound round = InvestmentRound.builder()
-            .userId(USER_ID)
-            .roundNumber(1)
-            .initialSeed(new BigDecimal("5000000"))
-            .emergencyFundingLimit(new BigDecimal("500000"))
-            .emergencyChargeCount(3)
-            .status(RoundStatus.ACTIVE)
-            .startedAt(LocalDateTime.of(2025, 1, 1, 0, 0))
-            .build();
+        InvestmentRound round = InvestmentRound.reconstitute(
+            null, null, USER_ID, 1,
+            new BigDecimal("5000000"), new BigDecimal("500000"), 3,
+            RoundStatus.ACTIVE,
+            LocalDateTime.of(2025, 1, 1, 0, 0), null,
+            List.of(), List.of());
         return investmentRoundJpaRepository.save(InvestmentRoundJpaEntity.fromDomain(round)).getId();
     }
 

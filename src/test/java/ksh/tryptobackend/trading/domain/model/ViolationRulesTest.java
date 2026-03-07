@@ -12,7 +12,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ViolationCheckerTest {
+class ViolationRulesTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 2, 26, 10, 0);
 
@@ -27,7 +27,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.BUY, new BigDecimal("5"), null, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(1L);
@@ -40,7 +40,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.BUY, new BigDecimal("4.9"), null, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -52,7 +52,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.SELL, new BigDecimal("10"), null, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -71,7 +71,7 @@ class ViolationCheckerTest {
                 Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
 
             // 현재가 50000000 < 평균 매수가 60000000 → 손실 중, 새 카운트 = 2 + 1 = 3 ≥ 3
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(2L);
@@ -86,7 +86,7 @@ class ViolationCheckerTest {
                 Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
 
             // 새 카운트 = 1 + 1 = 2 < 3
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -100,7 +100,7 @@ class ViolationCheckerTest {
                 Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
 
             // 현재가 50000000 > 평균 매수가 40000000 → 이익 중
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -112,7 +112,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -130,7 +130,7 @@ class ViolationCheckerTest {
                 Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 9, NOW);
 
             // todayOrderCount = 9, 새 카운트 = 9 + 1 = 10 ≥ 10
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(3L);
@@ -144,7 +144,7 @@ class ViolationCheckerTest {
                 Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 8, NOW);
 
             // todayOrderCount = 8, 새 카운트 = 8 + 1 = 9 < 10
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -156,7 +156,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.SELL, BigDecimal.ZERO, null, new BigDecimal("50000000"), 4, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(rule), context);
+            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
         }
@@ -178,7 +178,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.BUY, new BigDecimal("10"), holding, new BigDecimal("50000000"), 9, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(rules, context);
+            List<RuleViolation> violations = new ViolationRules(rules).check(context);
 
             assertThat(violations).hasSize(3);
         }
@@ -189,7 +189,7 @@ class ViolationCheckerTest {
             ViolationCheckContext context = new ViolationCheckContext(
                 Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = ViolationChecker.check(List.of(), context);
+            List<RuleViolation> violations = new ViolationRules(List.of()).check(context);
 
             assertThat(violations).isEmpty();
         }
