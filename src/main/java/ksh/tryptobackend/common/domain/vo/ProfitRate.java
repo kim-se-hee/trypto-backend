@@ -1,4 +1,4 @@
-package ksh.tryptobackend.ranking.domain.vo;
+package ksh.tryptobackend.common.domain.vo;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
