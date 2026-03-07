@@ -1,12 +1,12 @@
 package ksh.tryptobackend.acceptance.mock;
 
-import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotQueryPort;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockEmergencyFundingSnapshotAdapter implements EmergencyFundingSnapshotPort {
+public class MockEmergencyFundingSnapshotAdapter implements EmergencyFundingSnapshotQueryPort {
 
     private final Map<String, BigDecimal> fundings = new ConcurrentHashMap<>();
 

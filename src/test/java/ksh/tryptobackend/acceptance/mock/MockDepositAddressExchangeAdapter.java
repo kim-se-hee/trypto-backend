@@ -2,13 +2,13 @@ package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangePort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeQueryPort;
 import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockDepositAddressExchangeAdapter implements DepositAddressExchangePort {
+public class MockDepositAddressExchangeAdapter implements DepositAddressExchangeQueryPort {
 
     private final Map<Long, DepositTargetExchange> exchanges = new ConcurrentHashMap<>();
 

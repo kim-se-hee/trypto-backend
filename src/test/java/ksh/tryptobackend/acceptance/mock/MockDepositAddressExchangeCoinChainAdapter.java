@@ -2,13 +2,13 @@ package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainPort;
+import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangeCoinChainQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressChainInfo;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockDepositAddressExchangeCoinChainAdapter implements DepositAddressExchangeCoinChainPort {
+public class MockDepositAddressExchangeCoinChainAdapter implements DepositAddressExchangeCoinChainQueryPort {
 
     private final Map<String, DepositAddressChainInfo> chainInfos = new ConcurrentHashMap<>();
 

@@ -2,7 +2,7 @@ package ksh.tryptobackend.investmentround.application.service;
 
 import ksh.tryptobackend.investmentround.application.port.in.FindInvestmentRulesUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.InvestmentRuleResult;
-import ksh.tryptobackend.investmentround.application.port.out.InvestmentRuleQueryPort;
+import ksh.tryptobackend.investmentround.application.port.out.RuleSettingQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,11 +12,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FindInvestmentRulesService implements FindInvestmentRulesUseCase {
 
-    private final InvestmentRuleQueryPort investmentRuleQueryPort;
+    private final RuleSettingQueryPort ruleSettingQueryPort;
 
     @Override
     public List<InvestmentRuleResult> findByRoundId(Long roundId) {
-        return investmentRuleQueryPort.findByRoundId(roundId).stream()
+        return ruleSettingQueryPort.findByRoundId(roundId).stream()
             .map(info -> new InvestmentRuleResult(info.ruleId(), info.ruleType(), info.thresholdValue()))
             .toList();
     }

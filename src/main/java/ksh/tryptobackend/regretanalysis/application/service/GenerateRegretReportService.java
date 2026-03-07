@@ -2,8 +2,8 @@ package ksh.tryptobackend.regretanalysis.application.service;
 
 import ksh.tryptobackend.regretanalysis.application.port.in.GenerateRegretReportUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.command.GenerateRegretReportCommand;
-import ksh.tryptobackend.regretanalysis.application.port.out.LivePricePort;
-import ksh.tryptobackend.regretanalysis.application.port.out.PortfolioSnapshotPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.LivePriceQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.AssetSnapshotQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.TradeViolationQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,8 +28,9 @@ import java.util.stream.Collectors;
 public class GenerateRegretReportService implements GenerateRegretReportUseCase {
 
     private final TradeViolationQueryPort tradeViolationQueryPort;
-    private final LivePricePort livePricePort;
-    private final PortfolioSnapshotPort portfolioSnapshotPort;
+    private final LivePriceQueryPort livePriceQueryPort;
+    private final AssetSnapshotQueryPort assetSnapshotQueryPort;
+    private final Clock clock;
 
     @Override
     public Optional<RegretReport> generateReport(GenerateRegretReportCommand command) {
@@ -44,7 +47,8 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
             command.userId(), command.roundId(), command.exchangeId(),
             snapshot.getTotalProfitRate(), snapshot.getTotalInvestment(),
             impacts, details,
-            command.startedAt().toLocalDate(), LocalDate.now()
+            command.startedAt().toLocalDate(), LocalDate.now(clock),
+            LocalDateTime.now(clock)
         ));
     }
 
@@ -68,10 +72,10 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
         return violations.stream()
             .map(TradeViolation::getExchangeCoinId)
             .distinct()
-            .collect(Collectors.toMap(id -> id, livePricePort::getCurrentPrice));
+            .collect(Collectors.toMap(id -> id, livePriceQueryPort::getCurrentPrice));
     }
 
     private AssetSnapshot getLatestSnapshot(GenerateRegretReportCommand command) {
-        return portfolioSnapshotPort.getLatestByRoundIdAndExchangeId(command.roundId(), command.exchangeId());
+        return assetSnapshotQueryPort.getLatestByRoundIdAndExchangeId(command.roundId(), command.exchangeId());
     }
 }

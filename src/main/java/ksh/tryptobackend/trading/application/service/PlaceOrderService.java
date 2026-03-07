@@ -6,9 +6,7 @@ import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderCommand;
 import ksh.tryptobackend.trading.application.port.out.*;
 import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategy;
-import ksh.tryptobackend.trading.domain.model.Holding;
-import ksh.tryptobackend.trading.domain.model.Order;
-import ksh.tryptobackend.trading.domain.model.RuleViolation;
+import ksh.tryptobackend.trading.domain.model.*;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
@@ -20,28 +18,31 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PlaceOrderService implements PlaceOrderUseCase {
 
-    private final OrderPersistencePort orderPersistencePort;
-    private final WalletBalancePort walletBalancePort;
-    private final LivePricePort livePricePort;
-    private final TradingVenuePort tradingVenuePort;
-    private final ListedCoinPort listedCoinPort;
-    private final HoldingPersistencePort holdingPersistencePort;
-    private final ViolationCheckService violationCheckService;
-    private final ViolationPersistencePort violationPersistencePort;
+    private final OrderCommandPort orderCommandPort;
+    private final WalletBalanceQueryPort walletBalanceQueryPort;
+    private final WalletBalanceCommandPort walletBalanceCommandPort;
+    private final LivePriceQueryPort livePriceQueryPort;
+    private final TradingVenueQueryPort tradingVenueQueryPort;
+    private final ListedCoinQueryPort listedCoinQueryPort;
+    private final HoldingCommandPort holdingCommandPort;
+    private final ViolationRuleQueryPort violationRuleQueryPort;
+    private final PriceChangeRatePort priceChangeRatePort;
     private final List<OrderPlacementStrategy> strategies;
     private final Clock clock;
 
     @Override
     @Transactional
     public Order placeOrder(PlaceOrderCommand command) {
-        return orderPersistencePort.findByIdempotencyKey(command.idempotencyKey())
+        return orderCommandPort.findByIdempotencyKey(command.idempotencyKey())
             .orElseGet(() -> executeOrder(command));
     }
 
@@ -49,29 +50,30 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         ListedCoinRef listedCoin = getListedCoin(command.exchangeCoinId());
         TradingVenue venue = getTradingVenue(listedCoin.exchangeId());
         OrderPlacementStrategy strategy = resolveStrategy(command.orderType(), command.side());
-        BigDecimal currentPrice = livePricePort.getCurrentPrice(command.exchangeCoinId());
+        BigDecimal currentPrice = livePriceQueryPort.getCurrentPrice(command.exchangeCoinId());
 
         Order order = strategy.createOrder(command, venue, currentPrice, LocalDateTime.now(clock));
         validateBalance(strategy, order, command.walletId(), venue, listedCoin.coinId());
 
-        List<RuleViolation> violations = violationCheckService.checkOrderViolations(
+        List<RuleViolation> violations = checkOrderViolations(
             order, command.walletId(), command.exchangeCoinId(), listedCoin.coinId(), currentPrice);
+        order.addViolations(violations);
+
         applyBalanceChanges(strategy, order, command.walletId(), venue, listedCoin.coinId());
 
-        Order savedOrder = orderPersistencePort.save(order);
+        Order savedOrder = orderCommandPort.save(order);
         updateHoldingIfMarketOrder(order, command.walletId(), listedCoin.coinId(), currentPrice);
-        saveViolations(savedOrder.getId(), violations);
 
         return savedOrder;
     }
 
     private ListedCoinRef getListedCoin(Long exchangeCoinId) {
-        return listedCoinPort.findById(exchangeCoinId)
+        return listedCoinQueryPort.findById(exchangeCoinId)
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_COIN_NOT_FOUND));
     }
 
     private TradingVenue getTradingVenue(Long exchangeId) {
-        return tradingVenuePort.findByExchangeId(exchangeId)
+        return tradingVenueQueryPort.findByExchangeId(exchangeId)
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 
@@ -85,8 +87,41 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private void validateBalance(OrderPlacementStrategy strategy, Order order,
                                   Long walletId, TradingVenue venue, Long coinId) {
         Long balanceCoinId = strategy.resolveBalanceCoinId(venue, coinId);
-        BigDecimal available = walletBalancePort.getAvailableBalance(walletId, balanceCoinId);
+        BigDecimal available = walletBalanceQueryPort.getAvailableBalance(walletId, balanceCoinId);
         order.validateSufficientBalance(available);
+    }
+
+    private List<RuleViolation> checkOrderViolations(Order order, Long walletId,
+                                                      Long exchangeCoinId, Long coinId,
+                                                      BigDecimal currentPrice) {
+        List<ViolationRule> rules = violationRuleQueryPort.findByWalletId(walletId);
+        if (rules.isEmpty()) {
+            return List.of();
+        }
+
+        ViolationCheckContext context = buildViolationContext(
+            order, walletId, exchangeCoinId, coinId, currentPrice);
+        return new ViolationRules(rules).check(context);
+    }
+
+    private ViolationCheckContext buildViolationContext(Order order, Long walletId,
+                                                        Long exchangeCoinId, Long coinId,
+                                                        BigDecimal currentPrice) {
+        Holding holding = holdingCommandPort
+            .findByWalletIdAndCoinId(walletId, coinId)
+            .orElse(null);
+
+        BigDecimal changeRate = order.getSide() == Side.BUY
+            ? priceChangeRatePort.getChangeRate(exchangeCoinId)
+            : BigDecimal.ZERO;
+
+        LocalDate today = LocalDate.now(clock);
+        long todayOrderCount = orderCommandPort.countByWalletIdAndCreatedAtBetween(
+            walletId, today.atStartOfDay(), today.atTime(LocalTime.MAX));
+
+        return new ViolationCheckContext(
+            order.getSide(), changeRate, holding, currentPrice, todayOrderCount,
+            LocalDateTime.now(clock));
     }
 
     private void applyBalanceChanges(OrderPlacementStrategy strategy, Order order,
@@ -98,9 +133,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
     private void applyBalanceChange(Long walletId, BalanceChange change) {
         switch (change) {
-            case BalanceChange.Deduct d -> walletBalancePort.deductBalance(walletId, d.coinId(), d.amount());
-            case BalanceChange.Add a -> walletBalancePort.addBalance(walletId, a.coinId(), a.amount());
-            case BalanceChange.Lock l -> walletBalancePort.lockBalance(walletId, l.coinId(), l.amount());
+            case BalanceChange.Deduct d -> walletBalanceCommandPort.deductBalance(walletId, d.coinId(), d.amount());
+            case BalanceChange.Add a -> walletBalanceCommandPort.addBalance(walletId, a.coinId(), a.amount());
+            case BalanceChange.Lock l -> walletBalanceCommandPort.lockBalance(walletId, l.coinId(), l.amount());
         }
     }
 
@@ -109,19 +144,13 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         if (!order.isMarketOrder()) {
             return;
         }
-        Holding holding = holdingPersistencePort.findByWalletIdAndCoinId(walletId, coinId)
+        Holding holding = holdingCommandPort.findByWalletIdAndCoinId(walletId, coinId)
             .orElseGet(() -> Holding.empty(walletId, coinId));
         if (order.getSide() == Side.BUY) {
             holding.applyBuy(order.getFilledPrice(), order.getQuantity().value(), currentPrice);
         } else {
             holding.applySell(order.getQuantity().value());
         }
-        holdingPersistencePort.save(holding);
-    }
-
-    private void saveViolations(Long orderId, List<RuleViolation> violations) {
-        if (!violations.isEmpty()) {
-            violationPersistencePort.saveAll(orderId, violations);
-        }
+        holdingCommandPort.save(holding);
     }
 }

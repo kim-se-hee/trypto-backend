@@ -2,14 +2,15 @@ package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferWalletCommandPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferWalletQueryPort;
 import ksh.tryptobackend.transfer.domain.vo.TransferWallet;
 
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockTransferWalletAdapter implements TransferWalletPort {
+public class MockTransferWalletAdapter implements TransferWalletQueryPort, TransferWalletCommandPort {
 
     private final Map<Long, Long> walletToUserId = new ConcurrentHashMap<>();
     private final Map<Long, TransferWallet> wallets = new ConcurrentHashMap<>();

@@ -4,12 +4,13 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.transfer.application.port.in.TransferCoinUseCase;
 import ksh.tryptobackend.transfer.application.port.in.dto.command.TransferCoinCommand;
-import ksh.tryptobackend.transfer.application.port.out.TransferDepositPort;
-import ksh.tryptobackend.transfer.application.port.out.TransferExchangeCoinChainPort;
-import ksh.tryptobackend.transfer.application.port.out.TransferExchangePort;
-import ksh.tryptobackend.transfer.application.port.out.TransferPersistencePort;
-import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
-import ksh.tryptobackend.transfer.application.port.out.TransferWithdrawalFeePort;
+import ksh.tryptobackend.transfer.application.port.out.TransferCommandPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferDepositQueryPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferExchangeCoinChainQueryPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferExchangeQueryPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferWalletCommandPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferWalletQueryPort;
+import ksh.tryptobackend.transfer.application.port.out.TransferWithdrawalFeeQueryPort;
 import ksh.tryptobackend.transfer.domain.vo.TransferDepositAddress;
 import ksh.tryptobackend.transfer.domain.vo.TransferWallet;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
@@ -31,18 +32,19 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TransferCoinService implements TransferCoinUseCase {
 
-    private final TransferPersistencePort transferPersistencePort;
-    private final TransferWalletPort walletPort;
-    private final TransferDepositPort depositPort;
-    private final TransferWithdrawalFeePort withdrawalFeePort;
-    private final TransferExchangeCoinChainPort chainPort;
-    private final TransferExchangePort exchangePort;
+    private final TransferCommandPort transferCommandPort;
+    private final TransferWalletQueryPort walletQueryPort;
+    private final TransferWalletCommandPort walletCommandPort;
+    private final TransferDepositQueryPort depositPort;
+    private final TransferWithdrawalFeeQueryPort withdrawalFeePort;
+    private final TransferExchangeCoinChainQueryPort chainPort;
+    private final TransferExchangeQueryPort exchangePort;
     private final Clock clock;
 
     @Override
     @Transactional
     public Transfer transferCoin(TransferCoinCommand command) {
-        return transferPersistencePort.findByIdempotencyKey(command.idempotencyKey())
+        return transferCommandPort.findByIdempotencyKey(command.idempotencyKey())
             .orElseGet(() -> executeTransfer(command));
     }
 
@@ -50,7 +52,7 @@ public class TransferCoinService implements TransferCoinUseCase {
         Long coinId = command.coinId();
         String chain = command.chain();
 
-        TransferWallet wallet = walletPort.getWallet(command.fromWalletId());
+        TransferWallet wallet = walletQueryPort.getWallet(command.fromWalletId());
         Long sourceExchangeId = wallet.exchangeId();
 
         TransferSourceExchange sourceExchange = exchangePort.getExchangeDetail(sourceExchangeId);
@@ -61,7 +63,7 @@ public class TransferCoinService implements TransferCoinUseCase {
             sourceExchangeId, coinId, chain);
         condition.validateMinWithdrawal(command.amount());
         condition.validateSufficientBalance(
-            walletPort.getAvailableBalance(command.fromWalletId(), coinId),
+            walletQueryPort.getAvailableBalance(command.fromWalletId(), coinId),
             command.amount());
 
         TransferDestination destination = resolveDestination(command, wallet, coinId, chain);
@@ -69,7 +71,7 @@ public class TransferCoinService implements TransferCoinUseCase {
             coinId, chain, command.toAddress(), command.toTag(),
             command.amount(), condition.fee(), destination, LocalDateTime.now(clock));
         applyBalanceChanges(transfer);
-        return transferPersistencePort.save(transfer);
+        return transferCommandPort.save(transfer);
     }
 
     private void validateSourceChainSupport(Long exchangeId, Long coinId, String chain) {
@@ -87,7 +89,7 @@ public class TransferCoinService implements TransferCoinUseCase {
         }
 
         TransferDepositAddress destAddress = depositAddress.get();
-        TransferWallet destWallet = walletPort.getWallet(destAddress.walletId());
+        TransferWallet destWallet = walletQueryPort.getWallet(destAddress.walletId());
 
         Optional<TransferDestinationChain> destChainInfo = chainPort.findByExchangeIdAndCoinIdAndChain(
             destWallet.exchangeId(), coinId, chain);
@@ -112,11 +114,11 @@ public class TransferCoinService implements TransferCoinUseCase {
     private void applyBalanceChange(TransferBalanceChange change) {
         switch (change) {
             case TransferBalanceChange.Deduct d ->
-                walletPort.deductBalance(d.walletId(), d.coinId(), d.amount());
+                walletCommandPort.deductBalance(d.walletId(), d.coinId(), d.amount());
             case TransferBalanceChange.Add a ->
-                walletPort.addBalance(a.walletId(), a.coinId(), a.amount());
+                walletCommandPort.addBalance(a.walletId(), a.coinId(), a.amount());
             case TransferBalanceChange.Lock l ->
-                walletPort.lockBalance(l.walletId(), l.coinId(), l.amount());
+                walletCommandPort.lockBalance(l.walletId(), l.coinId(), l.amount());
         }
     }
 }

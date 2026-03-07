@@ -1,6 +1,6 @@
 package ksh.tryptobackend.batch.regretreport;
 
-import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangePort;
+import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangeQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.vo.ActiveRoundExchange;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RegretReportItemReader implements ItemReader<RegretReportInput> {
 
-    private final ActiveRoundExchangePort activeRoundExchangePort;
+    private final ActiveRoundExchangeQueryPort activeRoundExchangeQueryPort;
 
     private Iterator<RegretReportInput> iterator;
 
@@ -28,7 +28,7 @@ public class RegretReportItemReader implements ItemReader<RegretReportInput> {
     }
 
     private List<RegretReportInput> buildInputList() {
-        return activeRoundExchangePort.findAllActiveRoundExchanges().stream()
+        return activeRoundExchangeQueryPort.findAllActiveRoundExchanges().stream()
             .map(this::toInput)
             .toList();
     }

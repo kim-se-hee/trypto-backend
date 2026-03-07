@@ -7,11 +7,11 @@ import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretC
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyComparison;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
-import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisExchangePort;
-import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisRoundPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.PortfolioSnapshotPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportPersistencePort;
+import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisExchangeQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisRoundQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.AssetSnapshotQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import ksh.tryptobackend.regretanalysis.domain.vo.AnalysisExchange;
@@ -35,11 +35,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GetRegretChartService implements GetRegretChartUseCase {
 
-    private final AnalysisRoundPort analysisRoundPort;
-    private final RegretReportPersistencePort regretReportPersistencePort;
-    private final PortfolioSnapshotPort portfolioSnapshotPort;
-    private final BtcPriceHistoryPort btcPriceHistoryPort;
-    private final AnalysisExchangePort analysisExchangePort;
+    private final AnalysisRoundQueryPort analysisRoundQueryPort;
+    private final RegretReportQueryPort regretReportQueryPort;
+    private final AssetSnapshotQueryPort assetSnapshotQueryPort;
+    private final BtcPriceHistoryQueryPort btcPriceHistoryQueryPort;
+    private final AnalysisExchangeQueryPort analysisExchangeQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,35 +65,35 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private void getRoundAndValidateOwner(GetRegretChartQuery query) {
-        AnalysisRound round = analysisRoundPort.getRound(query.roundId());
+        AnalysisRound round = analysisRoundQueryPort.getRound(query.roundId());
         if (!round.userId().equals(query.userId())) {
             throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
         }
     }
 
     private void validateReportExists(GetRegretChartQuery query) {
-        if (!regretReportPersistencePort.existsByRoundIdAndExchangeId(query.roundId(), query.exchangeId())) {
+        if (!regretReportQueryPort.existsByRoundIdAndExchangeId(query.roundId(), query.exchangeId())) {
             throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
         }
     }
 
     private List<ViolationDetail> getViolationDetails(GetRegretChartQuery query) {
-        return regretReportPersistencePort.findViolationDetailsByRoundIdAndExchangeId(
+        return regretReportQueryPort.findViolationDetailsByRoundIdAndExchangeId(
             query.roundId(), query.exchangeId());
     }
 
     private AnalysisExchange getExchangeInfo(Long exchangeId) {
-        return analysisExchangePort.getExchangeInfo(exchangeId);
+        return analysisExchangeQueryPort.getExchangeInfo(exchangeId);
     }
 
     private AssetTimeline getAssetTimeline(GetRegretChartQuery query) {
-        List<AssetSnapshot> snapshots = portfolioSnapshotPort.findAllByRoundIdAndExchangeId(
+        List<AssetSnapshot> snapshots = assetSnapshotQueryPort.findAllByRoundIdAndExchangeId(
             query.roundId(), query.exchangeId());
         return AssetTimeline.of(snapshots);
     }
 
     private BtcBenchmark buildBtcBenchmark(AssetTimeline timeline, String currency) {
-        List<BtcDailyPrice> btcPrices = btcPriceHistoryPort.findBtcDailyPrices(
+        List<BtcDailyPrice> btcPrices = btcPriceHistoryQueryPort.findBtcDailyPrices(
             timeline.getStartDate(), timeline.getEndDate(), currency);
         Map<LocalDate, BigDecimal> priceMap = btcPrices.stream()
             .collect(Collectors.toMap(BtcDailyPrice::date, BtcDailyPrice::closePrice));

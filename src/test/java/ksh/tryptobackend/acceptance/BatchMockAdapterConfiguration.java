@@ -13,12 +13,12 @@ import ksh.tryptobackend.acceptance.mock.MockWalletSnapshotAdapter;
 import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.BalanceQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.EligibleRoundQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotPort;
-import ksh.tryptobackend.ranking.application.port.out.ExchangeSnapshotPort;
+import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.ExchangeSnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.EvaluatedHoldingQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.LivePricePort;
-import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangePort;
+import ksh.tryptobackend.ranking.application.port.out.LivePriceQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.ActiveRoundExchangeQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.TradeViolationQueryPort;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -35,13 +35,13 @@ public class BatchMockAdapterConfiguration {
 
     @Bean
     @Primary
-    public WalletSnapshotPort walletSnapshotPort() {
+    public WalletSnapshotQueryPort walletSnapshotPort() {
         return new MockWalletSnapshotAdapter();
     }
 
     @Bean
     @Primary
-    public ExchangeSnapshotPort exchangeSnapshotPort() {
+    public ExchangeSnapshotQueryPort exchangeSnapshotPort() {
         return new MockExchangeInfoQueryAdapter();
     }
 
@@ -59,7 +59,7 @@ public class BatchMockAdapterConfiguration {
 
     @Bean
     @Primary
-    public EmergencyFundingSnapshotPort emergencyFundingSnapshotPort() {
+    public EmergencyFundingSnapshotQueryPort emergencyFundingSnapshotPort() {
         return new MockEmergencyFundingSnapshotAdapter();
     }
 
@@ -71,7 +71,7 @@ public class BatchMockAdapterConfiguration {
 
     @Bean
     @Primary
-    public ActiveRoundExchangePort activeRoundExchangePort() {
+    public ActiveRoundExchangeQueryPort activeRoundExchangePort() {
         return new MockActiveRoundListAdapter();
     }
 
@@ -83,7 +83,7 @@ public class BatchMockAdapterConfiguration {
 
     @Bean
     @Primary
-    public LivePricePort rankingLivePricePort() {
+    public LivePriceQueryPort rankingLivePriceQueryPort() {
         return new MockRankingLivePriceAdapter();
     }
 }

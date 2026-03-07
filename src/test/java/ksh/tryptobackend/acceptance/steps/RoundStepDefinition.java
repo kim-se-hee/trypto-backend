@@ -155,15 +155,12 @@ public class RoundStepDefinition {
     @Given("파산 상태의 라운드가 존재한다")
     public void 파산_상태의_라운드가_존재한다() {
         InvestmentRoundJpaEntity entity = InvestmentRoundJpaEntity.fromDomain(
-            InvestmentRound.builder()
-                .userId(USER_ID)
-                .roundNumber(1L)
-                .initialSeed(new BigDecimal("1000000"))
-                .emergencyFundingLimit(new BigDecimal("500000"))
-                .emergencyChargeCount(3)
-                .status(RoundStatus.BANKRUPT)
-                .startedAt(LocalDateTime.now())
-                .build());
+            InvestmentRound.reconstitute(
+                null, null, USER_ID, 1L,
+                new BigDecimal("1000000"), new BigDecimal("500000"), 3,
+                RoundStatus.BANKRUPT,
+                LocalDateTime.now(), null,
+                List.of(), List.of()));
         InvestmentRoundJpaEntity saved = investmentRoundJpaRepository.save(entity);
         lastRoundId = saved.getId();
     }

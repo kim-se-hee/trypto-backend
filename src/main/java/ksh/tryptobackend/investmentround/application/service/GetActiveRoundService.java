@@ -7,7 +7,7 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.query.GetActive
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.GetActiveRoundResult;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.GetActiveRoundRuleResult;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.InvestmentRuleQueryPort;
+import ksh.tryptobackend.investmentround.application.port.out.RuleSettingQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRoundInfo;
 import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRuleInfo;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 public class GetActiveRoundService implements GetActiveRoundUseCase {
 
     private final InvestmentRoundQueryPort investmentRoundQueryPort;
-    private final InvestmentRuleQueryPort investmentRuleQueryPort;
+    private final RuleSettingQueryPort ruleSettingQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -38,7 +38,7 @@ public class GetActiveRoundService implements GetActiveRoundUseCase {
     }
 
     private List<GetActiveRoundRuleResult> findRules(Long roundId) {
-        return investmentRuleQueryPort.findByRoundId(roundId).stream()
+        return ruleSettingQueryPort.findByRoundId(roundId).stream()
             .map(this::toRuleResult)
             .toList();
     }
