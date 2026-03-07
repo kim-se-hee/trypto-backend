@@ -3,11 +3,13 @@ package ksh.tryptobackend.wallet.adapter.out;
 import ksh.tryptobackend.wallet.adapter.out.entity.WalletBalanceJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
+import ksh.tryptobackend.wallet.domain.model.WalletBalance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.function.Consumer;
 
 @Component
 @RequiredArgsConstructor
@@ -24,26 +26,29 @@ public class WalletBalanceJpaPersistenceAdapter implements WalletBalanceOperatio
 
     @Override
     public void deductBalance(Long walletId, Long coinId, BigDecimal amount) {
-        WalletBalanceJpaEntity entity = getOrCreateEntityForUpdate(walletId, coinId);
-        entity.deductAvailable(amount);
+        executeBalanceOperation(walletId, coinId, balance -> balance.deductAvailable(amount));
     }
 
     @Override
     public void addBalance(Long walletId, Long coinId, BigDecimal amount) {
-        WalletBalanceJpaEntity entity = getOrCreateEntityForUpdate(walletId, coinId);
-        entity.addAvailable(amount);
+        executeBalanceOperation(walletId, coinId, balance -> balance.addAvailable(amount));
     }
 
     @Override
     public void lockBalance(Long walletId, Long coinId, BigDecimal amount) {
-        WalletBalanceJpaEntity entity = getOrCreateEntityForUpdate(walletId, coinId);
-        entity.lock(amount);
+        executeBalanceOperation(walletId, coinId, balance -> balance.lock(amount));
     }
 
     @Override
     public void unlockBalance(Long walletId, Long coinId, BigDecimal amount) {
+        executeBalanceOperation(walletId, coinId, balance -> balance.unlock(amount));
+    }
+
+    private void executeBalanceOperation(Long walletId, Long coinId, Consumer<WalletBalance> operation) {
         WalletBalanceJpaEntity entity = getOrCreateEntityForUpdate(walletId, coinId);
-        entity.unlock(amount);
+        WalletBalance balance = entity.toDomain();
+        operation.accept(balance);
+        entity.updateFrom(balance);
     }
 
     private WalletBalanceJpaEntity getOrCreateEntityForUpdate(Long walletId, Long coinId) {
