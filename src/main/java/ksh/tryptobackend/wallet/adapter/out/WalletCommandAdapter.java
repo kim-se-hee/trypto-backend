@@ -1,27 +1,41 @@
 package ksh.tryptobackend.wallet.adapter.out;
 
 import ksh.tryptobackend.wallet.adapter.out.entity.WalletBalanceJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.entity.WalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
-import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
+import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
+import ksh.tryptobackend.wallet.application.port.out.WalletCommandPort;
+import ksh.tryptobackend.wallet.domain.model.Wallet;
 import ksh.tryptobackend.wallet.domain.model.WalletBalance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
 @Component
 @RequiredArgsConstructor
-public class WalletBalanceJpaPersistenceAdapter implements WalletBalanceOperationPort {
+public class WalletCommandAdapter implements WalletCommandPort {
 
-    private final WalletBalanceJpaRepository repository;
+    private final WalletJpaRepository walletRepository;
+    private final WalletBalanceJpaRepository balanceRepository;
 
     @Override
-    public BigDecimal getAvailableBalance(Long walletId, Long coinId) {
-        return repository.findByWalletIdAndCoinId(walletId, coinId)
-            .map(WalletBalanceJpaEntity::getAvailable)
-            .orElse(BigDecimal.ZERO);
+    public Long createWallet(Long roundId, Long exchangeId, BigDecimal seedAmount, LocalDateTime createdAt) {
+        Wallet wallet = Wallet.create(roundId, exchangeId, seedAmount, createdAt);
+        WalletJpaEntity saved = walletRepository.save(WalletJpaEntity.fromDomain(wallet));
+        return saved.getId();
+    }
+
+    @Override
+    public Long createWalletWithBalance(Long roundId, Long exchangeId, Long baseCurrencyCoinId,
+                                        BigDecimal initialAmount, LocalDateTime createdAt) {
+        Long walletId = createWallet(roundId, exchangeId, initialAmount, createdAt);
+        balanceRepository.save(
+            new WalletBalanceJpaEntity(walletId, baseCurrencyCoinId, initialAmount, BigDecimal.ZERO));
+        return walletId;
     }
 
     @Override
@@ -52,16 +66,16 @@ public class WalletBalanceJpaPersistenceAdapter implements WalletBalanceOperatio
     }
 
     private WalletBalanceJpaEntity getOrCreateEntityForUpdate(Long walletId, Long coinId) {
-        return repository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
-            .orElseGet(() -> createEntity(walletId, coinId));
+        return balanceRepository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
+            .orElseGet(() -> createBalanceEntity(walletId, coinId));
     }
 
-    private WalletBalanceJpaEntity createEntity(Long walletId, Long coinId) {
+    private WalletBalanceJpaEntity createBalanceEntity(Long walletId, Long coinId) {
         try {
-            return repository.saveAndFlush(
+            return balanceRepository.saveAndFlush(
                 new WalletBalanceJpaEntity(walletId, coinId, BigDecimal.ZERO, BigDecimal.ZERO));
         } catch (DataIntegrityViolationException e) {
-            return repository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
+            return balanceRepository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
                 .orElseThrow(() -> e);
         }
     }
