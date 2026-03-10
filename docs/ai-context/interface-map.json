@@ -103,12 +103,6 @@
         ]
       },
       {
-        "useCase": "GetLivePriceUseCase",
-        "methods": [
-          "getCurrentPrice(Long exchangeCoinId) → BigDecimal"
-        ]
-      },
-      {
         "useCase": "FindFilledOrdersUseCase",
         "methods": [
           "findByOrderIds(List<Long> orderIds) → List<FilledOrderResult>",
@@ -183,6 +177,18 @@
         ]
       },
       {
+        "useCase": "FindCoinInfoUseCase",
+        "methods": [
+          "findByIds(Set<Long> coinIds) → Map<Long, CoinInfoResult>"
+        ]
+      },
+      {
+        "useCase": "GetLivePriceUseCase",
+        "methods": [
+          "getCurrentPrice(Long exchangeCoinId) → BigDecimal"
+        ]
+      },
+      {
         "useCase": "FindWithdrawalFeeUseCase",
         "methods": [
           "findByExchangeIdAndCoinIdAndChain(Long exchangeId, Long coinId, String chain) → Optional<WithdrawalFeeResult>"
@@ -194,6 +200,7 @@
       "ExchangeSummaryResult": "exchangeId: Long, name: String, baseCurrencySymbol: String",
       "ExchangeCoinMappingResult": "exchangeCoinId: Long, exchangeId: Long, coinId: Long",
       "ExchangeCoinChainResult": "tagRequired: boolean",
+      "CoinInfoResult": "symbol: String, name: String",
       "WithdrawalFeeResult": "fee: BigDecimal, minWithdrawal: BigDecimal"
     }
   },
