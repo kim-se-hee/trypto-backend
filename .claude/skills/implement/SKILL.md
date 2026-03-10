@@ -70,7 +70,15 @@ CLAUDE.md의 코딩 컨벤션과 Git 컨벤션을 따라 구현한다.
 ./gradlew test --tests "*ArchUnit*"
 ```
 
-ArchUnit 테스트가 전부 통과할 때까지 코드를 수정하고 재실행한다. 통과하면 Phase 3으로 넘어간다.
+ArchUnit 테스트가 전부 통과할 때까지 코드를 수정하고 재실행한다.
+
+페이즈 추적을 종료한다:
+
+```bash
+rm -f "$HOME/.claude/implement-phase.json"
+```
+
+통과하면 Phase 3으로 넘어간다.
 
 ---
 
@@ -92,13 +100,3 @@ test-automator 서브에이전트에 위임한다.
 - concurrency-reviewer
 
 리뷰 결과를 종합하여 사용자에게 보고한다.
-
----
-
-## 정리
-
-페이즈 추적 파일을 삭제한다:
-
-```bash
-rm -f "$HOME/.claude/implement-phase.json"
-```
