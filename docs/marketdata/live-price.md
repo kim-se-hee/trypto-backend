@@ -7,7 +7,6 @@ Redis에 캐싱된 실시간 시세를 조회한다.
 
 # 배경
 
-시세 수집기 설계: https://www.notion.so/309a3dccf02580c8b85bebc041d90195
 - Redis 키 형식: `ticker:{exchange}:{pair}` (예: `ticker:UPBIT:BTC/KRW`)
 - 값: NormalizedTicker JSON (last_price 필드에 현재가)
 
