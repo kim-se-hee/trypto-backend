@@ -40,6 +40,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(404, "order.not.found"),
     RANKING_NOT_FOUND(404, "ranking.not.found"),
     ROUND_NOT_FOUND(404, "round.not.found"),
+    WALLET_NOT_OWNED(403, "wallet.not.owned"),
     WALLET_ACCESS_DENIED(403, "wallet.access.denied"),
     ROUND_ACCESS_DENIED(403, "round.access.denied"),
     ROUND_NOT_ACTIVE(409, "round.not.active"),
