@@ -7,13 +7,15 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.result.RoundInf
 import ksh.tryptobackend.marketdata.application.port.in.FindCoinInfoUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
-import ksh.tryptobackend.marketdata.application.port.in.GetLivePriceUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.GetLivePricesUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.CoinInfoResult;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
 import ksh.tryptobackend.portfolio.application.port.in.GetMyHoldingsUseCase;
 import ksh.tryptobackend.portfolio.application.port.in.dto.query.GetMyHoldingsQuery;
 import ksh.tryptobackend.portfolio.application.port.in.dto.result.HoldingSnapshotResult;
 import ksh.tryptobackend.portfolio.application.port.in.dto.result.MyHoldingsResult;
+import ksh.tryptobackend.portfolio.domain.vo.PortfolioHolding;
+import ksh.tryptobackend.portfolio.domain.vo.PortfolioHoldings;
 import ksh.tryptobackend.trading.application.port.in.FindActiveHoldingsUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.result.HoldingInfoResult;
 import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
@@ -21,7 +23,6 @@ import ksh.tryptobackend.wallet.application.port.in.GetAvailableBalanceUseCase;
 import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -31,7 +32,6 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class GetMyHoldingsService implements GetMyHoldingsUseCase {
 
     private final FindWalletUseCase findWalletUseCase;
@@ -41,7 +41,7 @@ public class GetMyHoldingsService implements GetMyHoldingsUseCase {
     private final FindActiveHoldingsUseCase findActiveHoldingsUseCase;
     private final FindCoinInfoUseCase findCoinInfoUseCase;
     private final FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
-    private final GetLivePriceUseCase getLivePriceUseCase;
+    private final GetLivePricesUseCase getLivePricesUseCase;
 
     @Override
     public MyHoldingsResult getMyHoldings(GetMyHoldingsQuery query) {
@@ -50,10 +50,15 @@ public class GetMyHoldingsService implements GetMyHoldingsUseCase {
         ExchangeDetailResult exchange = findExchangeDetail(wallet.exchangeId());
         BigDecimal baseCurrencyBalance = getAvailableBalanceUseCase.getAvailableBalance(
                 query.walletId(), exchange.baseCurrencyCoinId());
-        List<HoldingInfoResult> holdings = findActiveHoldingsUseCase.findActiveHoldings(query.walletId());
+        PortfolioHoldings portfolioHoldings = toPortfolioHoldings(
+                findActiveHoldingsUseCase.findActiveHoldings(query.walletId()));
+
+        Set<Long> allCoinIds = collectAllCoinIds(portfolioHoldings, exchange.baseCurrencyCoinId());
+        Map<Long, CoinInfoResult> coinInfoMap = findCoinInfoUseCase.findByIds(allCoinIds);
+        String baseCurrencySymbol = getCoinSymbol(coinInfoMap, exchange.baseCurrencyCoinId());
+
         List<HoldingSnapshotResult> holdingSnapshots = buildHoldingSnapshots(
-                holdings, wallet.exchangeId(), exchange.baseCurrencyCoinId());
-        String baseCurrencySymbol = findBaseCurrencySymbol(exchange.baseCurrencyCoinId());
+                portfolioHoldings, wallet.exchangeId(), coinInfoMap);
 
         return new MyHoldingsResult(wallet.exchangeId(), baseCurrencyBalance, baseCurrencySymbol, holdingSnapshots);
     }
@@ -76,9 +81,21 @@ public class GetMyHoldingsService implements GetMyHoldingsUseCase {
                 .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 
-    private String findBaseCurrencySymbol(Long baseCurrencyCoinId) {
-        Map<Long, CoinInfoResult> coinInfoMap = findCoinInfoUseCase.findByIds(Set.of(baseCurrencyCoinId));
-        CoinInfoResult coinInfo = coinInfoMap.get(baseCurrencyCoinId);
+    private PortfolioHoldings toPortfolioHoldings(List<HoldingInfoResult> holdings) {
+        List<PortfolioHolding> converted = holdings.stream()
+                .map(h -> new PortfolioHolding(h.coinId(), h.avgBuyPrice(), h.totalQuantity()))
+                .toList();
+        return new PortfolioHoldings(converted);
+    }
+
+    private Set<Long> collectAllCoinIds(PortfolioHoldings portfolioHoldings, Long baseCurrencyCoinId) {
+        Set<Long> allCoinIds = new HashSet<>(portfolioHoldings.coinIds());
+        allCoinIds.add(baseCurrencyCoinId);
+        return allCoinIds;
+    }
+
+    private String getCoinSymbol(Map<Long, CoinInfoResult> coinInfoMap, Long coinId) {
+        CoinInfoResult coinInfo = coinInfoMap.get(coinId);
         if (coinInfo == null) {
             throw new CustomException(ErrorCode.COIN_NOT_FOUND);
         }
@@ -86,42 +103,41 @@ public class GetMyHoldingsService implements GetMyHoldingsUseCase {
     }
 
     private List<HoldingSnapshotResult> buildHoldingSnapshots(
-            List<HoldingInfoResult> holdings, Long exchangeId, Long baseCurrencyCoinId) {
-        if (holdings.isEmpty()) {
+            PortfolioHoldings portfolioHoldings, Long exchangeId,
+            Map<Long, CoinInfoResult> coinInfoMap) {
+        if (portfolioHoldings.isEmpty()) {
             return List.of();
         }
 
-        Set<Long> coinIds = collectCoinIds(holdings);
-        Map<Long, CoinInfoResult> coinInfoMap = findCoinInfoUseCase.findByIds(coinIds);
-        List<Long> coinIdList = holdings.stream().map(HoldingInfoResult::coinId).toList();
-        Map<Long, Long> exchangeCoinIdMap = findExchangeCoinMappingUseCase.findExchangeCoinIdMap(exchangeId, coinIdList);
+        List<Long> coinIdList = portfolioHoldings.values().stream()
+                .map(PortfolioHolding::coinId).toList();
+        Map<Long, Long> exchangeCoinIdMap = findExchangeCoinMappingUseCase.findExchangeCoinIdMap(
+                exchangeId, coinIdList);
+        Set<Long> exchangeCoinIds = new HashSet<>(exchangeCoinIdMap.values());
+        Map<Long, BigDecimal> priceMap = getLivePricesUseCase.getCurrentPrices(exchangeCoinIds);
 
-        return holdings.stream()
-                .map(holding -> toHoldingSnapshot(holding, coinInfoMap, exchangeCoinIdMap))
+        return portfolioHoldings.values().stream()
+                .map(holding -> toHoldingSnapshot(holding, coinInfoMap, exchangeCoinIdMap, priceMap))
                 .toList();
     }
 
-    private Set<Long> collectCoinIds(List<HoldingInfoResult> holdings) {
-        Set<Long> coinIds = new HashSet<>();
-        for (HoldingInfoResult holding : holdings) {
-            coinIds.add(holding.coinId());
-        }
-        return coinIds;
-    }
-
     private HoldingSnapshotResult toHoldingSnapshot(
-            HoldingInfoResult holding,
+            PortfolioHolding holding,
             Map<Long, CoinInfoResult> coinInfoMap,
-            Map<Long, Long> exchangeCoinIdMap) {
+            Map<Long, Long> exchangeCoinIdMap,
+            Map<Long, BigDecimal> priceMap) {
         CoinInfoResult coinInfo = coinInfoMap.get(holding.coinId());
+        if (coinInfo == null) {
+            throw new CustomException(ErrorCode.COIN_NOT_FOUND);
+        }
         Long exchangeCoinId = exchangeCoinIdMap.get(holding.coinId());
-        BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(exchangeCoinId);
+        BigDecimal currentPrice = priceMap.get(exchangeCoinId);
 
         return new HoldingSnapshotResult(
                 holding.coinId(),
-                coinInfo != null ? coinInfo.symbol() : null,
-                coinInfo != null ? coinInfo.name() : null,
-                holding.totalQuantity(),
+                coinInfo.symbol(),
+                coinInfo.name(),
+                holding.quantity(),
                 holding.avgBuyPrice(),
                 currentPrice
         );
