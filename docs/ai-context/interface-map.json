@@ -189,6 +189,12 @@
         ]
       },
       {
+        "useCase": "GetLivePricesUseCase",
+        "methods": [
+          "getCurrentPrices(Set<Long> exchangeCoinIds) → Map<Long, BigDecimal>"
+        ]
+      },
+      {
         "useCase": "FindWithdrawalFeeUseCase",
         "methods": [
           "findByExchangeIdAndCoinIdAndChain(Long exchangeId, Long coinId, String chain) → Optional<WithdrawalFeeResult>"
