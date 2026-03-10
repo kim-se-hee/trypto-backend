@@ -15,7 +15,27 @@ description: >
 
 ---
 
-## Phase 1: 구현
+## 페이즈 추적
+
+각 Phase 시작 시 아래 명령어로 현재 페이즈를 기록한다. `{PHASE}` 부분만 해당 Phase 값으로 교체한다:
+
+```bash
+echo '{"phase":"{PHASE}","feature":"$ARGUMENTS"}' > "$HOME/.claude/implement-phase.json"
+```
+
+워크플로우 종료 시 반드시 페이즈 파일을 삭제한다:
+
+```bash
+rm -f "$HOME/.claude/implement-phase.json"
+```
+
+---
+
+## Phase 1: 탐색
+
+**페이즈 마커: `explore`**
+
+이 단계에서는 반드시 읽기만 수행한다.
 
 ### 사전 읽기
 
@@ -32,7 +52,11 @@ description: >
 - **다른 컨텍스트의 소스 코드를 읽지 않는다.** 시그니처와 DTO 구조는 `interface-map.json`만 참조한다
 - **`interface-map.json`에 필요한 UseCase/DTO가 없으면 구현을 중단한다.** 어떤 선행 기능을 먼저 구현해야 하는지 사용자에게 알린다
 
-### 구현
+---
+
+## Phase 2: 구현
+
+**페이즈 마커: `implement`**
 
 CLAUDE.md의 코딩 컨벤션과 Git 컨벤션을 따라 구현한다.
 
@@ -46,17 +70,19 @@ CLAUDE.md의 코딩 컨벤션과 Git 컨벤션을 따라 구현한다.
 ./gradlew test --tests "*ArchUnit*"
 ```
 
-ArchUnit 테스트가 전부 통과할 때까지 코드를 수정하고 재실행한다. 통과하면 Phase 2로 넘어간다.
+ArchUnit 테스트가 전부 통과할 때까지 코드를 수정하고 재실행한다. 통과하면 Phase 3으로 넘어간다.
 
-## Phase 2: 테스트
+---
+
+## Phase 3: 테스트
 
 test-automator 서브에이전트에 위임한다.
 
 프롬프트에 아래 정보를 포함한다:
 - 기능 문서 경로
-- Phase 1에서 생성/수정한 파일 목록
+- Phase 2에서 생성/수정한 파일 목록
 
-## Phase 3: 코드 리뷰
+## Phase 4: 코드 리뷰
 
 아래 4개의 리뷰어 서브에이전트를 병렬로 실행한다.
 
@@ -66,3 +92,13 @@ test-automator 서브에이전트에 위임한다.
 - concurrency-reviewer
 
 리뷰 결과를 종합하여 사용자에게 보고한다.
+
+---
+
+## 정리
+
+페이즈 추적 파일을 삭제한다:
+
+```bash
+rm -f "$HOME/.claude/implement-phase.json"
+```
