@@ -36,6 +36,7 @@ public enum ErrorCode {
     WALLET_NOT_FOUND(404, "wallet.not.found"),
     EXCHANGE_COIN_NOT_FOUND(404, "exchange.coin.not.found"),
     EXCHANGE_NOT_FOUND(404, "exchange.not.found"),
+    COIN_NOT_FOUND(404, "coin.not.found"),
     ORDER_NOT_FOUND(404, "order.not.found"),
     RANKING_NOT_FOUND(404, "ranking.not.found"),
     ROUND_NOT_FOUND(404, "round.not.found"),
