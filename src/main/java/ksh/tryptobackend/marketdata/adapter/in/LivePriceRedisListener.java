@@ -2,7 +2,7 @@ package ksh.tryptobackend.marketdata.adapter.in;
 
 import jakarta.annotation.PostConstruct;
 import ksh.tryptobackend.marketdata.adapter.in.dto.response.LivePriceResponse;
-import ksh.tryptobackend.marketdata.application.port.out.ExchangeQueryPort;
+import ksh.tryptobackend.marketdata.application.port.in.FindAllExchangeIdsUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
@@ -28,12 +28,12 @@ public class LivePriceRedisListener {
 
     private final RedisMessageListenerContainer listenerContainer;
     private final SimpMessagingTemplate messagingTemplate;
-    private final ExchangeQueryPort exchangeQueryPort;
+    private final FindAllExchangeIdsUseCase findAllExchangeIdsUseCase;
     private final ObjectMapper objectMapper;
 
     @PostConstruct
     void subscribeAll() {
-        List<Long> exchangeIds = exchangeQueryPort.findAllExchangeIds();
+        List<Long> exchangeIds = findAllExchangeIdsUseCase.findAllExchangeIds();
         for (Long exchangeId : exchangeIds) {
             String channel = CHANNEL_PREFIX + exchangeId;
             String topic = TOPIC_PREFIX + exchangeId;
