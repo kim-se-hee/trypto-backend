@@ -1,4 +1,4 @@
-package ksh.tryptobackend.marketdata.adapter.in.dto.request;
+package ksh.tryptobackend.marketdata.adapter.in.dto;
 
 import java.math.BigDecimal;
 

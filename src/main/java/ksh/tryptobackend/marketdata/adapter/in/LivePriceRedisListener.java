@@ -1,7 +1,7 @@
 package ksh.tryptobackend.marketdata.adapter.in;
 
 import jakarta.annotation.PostConstruct;
-import ksh.tryptobackend.marketdata.adapter.in.dto.request.LivePriceMessage;
+import ksh.tryptobackend.marketdata.adapter.in.dto.LivePriceMessage;
 import ksh.tryptobackend.marketdata.adapter.in.dto.response.LivePriceResponse;
 import ksh.tryptobackend.marketdata.application.port.in.FindAllExchangeIdsUseCase;
 import lombok.RequiredArgsConstructor;
