@@ -11,7 +11,7 @@ public final class ArchitectureConstants {
 
     static final String[] BOUNDED_CONTEXTS = {
         "trading", "wallet", "transfer", "investmentround",
-        "ranking", "regretanalysis", "portfolio", "marketdata"
+        "ranking", "regretanalysis", "portfolio", "marketdata", "user"
     };
 
     static final String COMMON = BASE + ".common";
