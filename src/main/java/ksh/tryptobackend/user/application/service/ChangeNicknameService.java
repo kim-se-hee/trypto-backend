@@ -22,8 +22,8 @@ public class ChangeNicknameService implements ChangeNicknameUseCase {
     @Transactional
     public User changeNickname(ChangeNicknameCommand command) {
         User user = getUser(command.userId());
-        user.changeNickname(command.nickname());
         validateNicknameUniqueness(command.nickname());
+        user.changeNickname(command.nickname());
         return userCommandPort.save(user);
     }
 
@@ -33,7 +33,7 @@ public class ChangeNicknameService implements ChangeNicknameUseCase {
     }
 
     private void validateNicknameUniqueness(String nickname) {
-        if (userCommandPort.existsByNickname(nickname)) {
+        if (userQueryPort.existsByNickname(nickname)) {
             throw new CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS);
         }
     }

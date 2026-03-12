@@ -19,4 +19,9 @@ public class UserQueryAdapter implements UserQueryPort {
     public Optional<User> findById(Long userId) {
         return userJpaRepository.findById(userId).map(UserJpaEntity::toDomain);
     }
+
+    @Override
+    public boolean existsByNickname(String nickname) {
+        return userJpaRepository.existsByNickname(nickname);
+    }
 }

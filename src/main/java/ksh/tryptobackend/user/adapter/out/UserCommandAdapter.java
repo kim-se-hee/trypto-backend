@@ -18,9 +18,4 @@ public class UserCommandAdapter implements UserCommandPort {
         UserJpaEntity saved = userJpaRepository.save(UserJpaEntity.fromDomain(user));
         return saved.toDomain();
     }
-
-    @Override
-    public boolean existsByNickname(String nickname) {
-        return userJpaRepository.existsByNickname(nickname);
-    }
 }

@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface UserQueryPort {
 
     Optional<User> findById(Long userId);
+
+    boolean existsByNickname(String nickname);
 }
