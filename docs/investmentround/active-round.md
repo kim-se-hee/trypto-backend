@@ -57,6 +57,11 @@ GET /api/rounds/active?userId=1
     "rules": [
       { "ruleId": 11, "ruleType": "LOSS_CUT", "thresholdValue": 10 },
       { "ruleId": 12, "ruleType": "PROFIT_TAKE", "thresholdValue": 25 }
+    ],
+    "wallets": [
+      { "walletId": 1, "exchangeId": 1 },
+      { "walletId": 2, "exchangeId": 2 },
+      { "walletId": 3, "exchangeId": 3 }
     ]
   }
 }

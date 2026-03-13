@@ -109,6 +109,11 @@
       { "ruleId": 4, "ruleType": "AVERAGING_DOWN_LIMIT", "thresholdValue": 3 },
       { "ruleId": 5, "ruleType": "OVERTRADING_LIMIT", "thresholdValue": 10 }
     ],
+    "wallets": [
+      { "walletId": 1, "exchangeId": 1 },
+      { "walletId": 2, "exchangeId": 2 },
+      { "walletId": 3, "exchangeId": 3 }
+    ],
     "startedAt": "2026-02-27T14:30:00"
   }
 }
