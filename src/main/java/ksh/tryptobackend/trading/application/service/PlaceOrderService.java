@@ -2,7 +2,8 @@ package ksh.tryptobackend.trading.application.service;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.investmentround.application.port.in.FindInvestmentRulesUseCase;
+import ksh.tryptobackend.investmentround.application.port.in.CheckRuleViolationsUseCase;
+import ksh.tryptobackend.investmentround.application.port.in.dto.query.CheckRuleViolationsQuery;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
@@ -11,15 +12,16 @@ import ksh.tryptobackend.trading.application.port.out.HoldingCommandPort;
 import ksh.tryptobackend.marketdata.application.port.in.GetLivePriceUseCase;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.application.port.out.PriceChangeRateQueryPort;
+import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategies;
 import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategy;
-import ksh.tryptobackend.trading.domain.model.*;
+import ksh.tryptobackend.trading.domain.model.Holding;
+import ksh.tryptobackend.trading.domain.model.Order;
+import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
-import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
-import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
 import ksh.tryptobackend.wallet.application.port.in.GetAvailableBalanceUseCase;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
@@ -44,10 +46,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
     private final HoldingCommandPort holdingCommandPort;
-    private final FindWalletUseCase findWalletUseCase;
-    private final FindInvestmentRulesUseCase findInvestmentRulesUseCase;
+    private final CheckRuleViolationsUseCase checkRuleViolationsUseCase;
     private final PriceChangeRateQueryPort priceChangeRatePort;
-    private final List<OrderPlacementStrategy> strategies;
+    private final OrderPlacementStrategies strategies;
     private final Clock clock;
 
     @Override
@@ -60,7 +61,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private Order executeOrder(PlaceOrderCommand command) {
         ListedCoinRef listedCoin = getListedCoin(command.exchangeCoinId());
         TradingVenue venue = getTradingVenue(listedCoin.exchangeId());
-        OrderPlacementStrategy strategy = resolveStrategy(command.orderType(), command.side());
+        OrderPlacementStrategy strategy = strategies.resolve(command.orderType(), command.side());
         BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(command.exchangeCoinId());
 
         Order order = strategy.createOrder(command, venue, currentPrice, LocalDateTime.now(clock));
@@ -93,13 +94,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 
-    private OrderPlacementStrategy resolveStrategy(OrderType orderType, Side side) {
-        return strategies.stream()
-            .filter(s -> s.supports(orderType, side))
-            .findFirst()
-            .orElseThrow();
-    }
-
     private void validateBalance(OrderPlacementStrategy strategy, Order order,
                                   Long walletId, TradingVenue venue, Long coinId) {
         Long balanceCoinId = strategy.resolveBalanceCoinId(venue, coinId);
@@ -110,27 +104,16 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private List<RuleViolation> checkOrderViolations(Order order, Long walletId,
                                                       Long exchangeCoinId, Long coinId,
                                                       BigDecimal currentPrice) {
-        List<ViolationRule> rules = findViolationRules(walletId);
-        if (rules.isEmpty()) {
-            return List.of();
-        }
-
-        ViolationCheckContext context = buildViolationContext(
+        CheckRuleViolationsQuery query = buildViolationQuery(
             order, walletId, exchangeCoinId, coinId, currentPrice);
-        return new ViolationRules(rules).check(context);
+        return checkRuleViolationsUseCase.checkViolations(query).stream()
+            .map(r -> new RuleViolation(r.ruleId(), r.violationReason(), r.createdAt()))
+            .toList();
     }
 
-    private List<ViolationRule> findViolationRules(Long walletId) {
-        return findWalletUseCase.findById(walletId)
-            .map(wallet -> findInvestmentRulesUseCase.findByRoundId(wallet.roundId()).stream()
-                .map(r -> ViolationRule.of(r.ruleId(), r.ruleType(), r.thresholdValue()))
-                .toList())
-            .orElse(List.of());
-    }
-
-    private ViolationCheckContext buildViolationContext(Order order, Long walletId,
-                                                        Long exchangeCoinId, Long coinId,
-                                                        BigDecimal currentPrice) {
+    private CheckRuleViolationsQuery buildViolationQuery(Order order, Long walletId,
+                                                          Long exchangeCoinId, Long coinId,
+                                                          BigDecimal currentPrice) {
         Holding holding = holdingCommandPort
             .findByWalletIdAndCoinId(walletId, coinId)
             .orElse(null);
@@ -143,9 +126,17 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         long todayOrderCount = orderCommandPort.countByWalletIdAndCreatedAtBetween(
             walletId, today.atStartOfDay(), today.atTime(LocalTime.MAX));
 
-        return new ViolationCheckContext(
-            order.getSide(), changeRate, holding, currentPrice, todayOrderCount,
-            LocalDateTime.now(clock));
+        return new CheckRuleViolationsQuery(
+            walletId,
+            order.getSide() == Side.BUY,
+            changeRate,
+            holding != null ? holding.getAvgBuyPrice() : null,
+            holding != null ? holding.getTotalQuantity() : null,
+            holding != null ? holding.getAveragingDownCount() : 0,
+            currentPrice,
+            todayOrderCount,
+            LocalDateTime.now(clock)
+        );
     }
 
     private void applyBalanceChanges(OrderPlacementStrategy strategy, Order order,
@@ -170,11 +161,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         }
         Holding holding = holdingCommandPort.findByWalletIdAndCoinId(walletId, coinId)
             .orElseGet(() -> Holding.empty(walletId, coinId));
-        if (order.getSide() == Side.BUY) {
-            holding.applyBuy(order.getFilledPrice(), order.getQuantity().value(), currentPrice);
-        } else {
-            holding.applySell(order.getQuantity().value());
-        }
+        holding.applyOrder(order.getSide(), order.getFilledPrice(), order.getQuantity().value(), currentPrice);
         holdingCommandPort.save(holding);
     }
 }
