@@ -1,7 +1,6 @@
-package ksh.tryptobackend.trading.domain.model;
+package ksh.tryptobackend.investmentround.domain.model;
 
 import ksh.tryptobackend.common.domain.vo.RuleType;
-import ksh.tryptobackend.trading.domain.vo.Side;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,9 +24,9 @@ class ViolationRulesTest {
         void buyWithHighChangeRate_violation() {
             ViolationRule rule = ViolationRule.of(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, new BigDecimal("5"), null, new BigDecimal("50000000"), 0, NOW);
+                true, new BigDecimal("5"), null, null, 0, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(1L);
@@ -38,9 +37,9 @@ class ViolationRulesTest {
         void buyWithLowChangeRate_noViolation() {
             ViolationRule rule = ViolationRule.of(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, new BigDecimal("4.9"), null, new BigDecimal("50000000"), 0, NOW);
+                true, new BigDecimal("4.9"), null, null, 0, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -50,9 +49,9 @@ class ViolationRulesTest {
         void sellOrder_skipped() {
             ViolationRule rule = ViolationRule.of(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.SELL, new BigDecimal("10"), null, new BigDecimal("50000000"), 0, NOW);
+                false, new BigDecimal("10"), null, null, 0, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -66,12 +65,12 @@ class ViolationRulesTest {
         @DisplayName("매수 + 손실 중 + 물타기 횟수 ≥ 설정값 → 위반")
         void buyAtLossExceedingLimit_violation() {
             ViolationRule rule = ViolationRule.of(2L, RuleType.AVERAGING_DOWN_LIMIT, new BigDecimal("3"));
-            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
+                true, BigDecimal.ZERO, new BigDecimal("60000000"), new BigDecimal("0.01"),
+                2, new BigDecimal("50000000"), 0, NOW);
 
             // 현재가 50000000 < 평균 매수가 60000000 → 손실 중, 새 카운트 = 2 + 1 = 3 ≥ 3
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(2L);
@@ -81,12 +80,12 @@ class ViolationRulesTest {
         @DisplayName("매수 + 손실 중 + 물타기 횟수 < 설정값 → 위반 없음")
         void buyAtLossBelowLimit_noViolation() {
             ViolationRule rule = ViolationRule.of(2L, RuleType.AVERAGING_DOWN_LIMIT, new BigDecimal("3"));
-            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 1);
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
+                true, BigDecimal.ZERO, new BigDecimal("60000000"), new BigDecimal("0.01"),
+                1, new BigDecimal("50000000"), 0, NOW);
 
             // 새 카운트 = 1 + 1 = 2 < 3
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -95,12 +94,12 @@ class ViolationRulesTest {
         @DisplayName("매수 + 이익 중 → 물타기 아님")
         void buyAtProfit_noViolation() {
             ViolationRule rule = ViolationRule.of(2L, RuleType.AVERAGING_DOWN_LIMIT, new BigDecimal("1"));
-            Holding holding = createHolding(new BigDecimal("40000000"), new BigDecimal("0.01"), 5);
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, holding, new BigDecimal("50000000"), 0, NOW);
+                true, BigDecimal.ZERO, new BigDecimal("40000000"), new BigDecimal("0.01"),
+                5, new BigDecimal("50000000"), 0, NOW);
 
             // 현재가 50000000 > 평균 매수가 40000000 → 이익 중
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -110,9 +109,9 @@ class ViolationRulesTest {
         void noHolding_skipped() {
             ViolationRule rule = ViolationRule.of(2L, RuleType.AVERAGING_DOWN_LIMIT, new BigDecimal("1"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 0, NOW);
+                true, BigDecimal.ZERO, null, null, 0, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -127,10 +126,10 @@ class ViolationRulesTest {
         void orderCountExceedingLimit_violation() {
             ViolationRule rule = ViolationRule.of(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 9, NOW);
+                true, BigDecimal.ZERO, null, null, 0, new BigDecimal("50000000"), 9, NOW);
 
             // todayOrderCount = 9, 새 카운트 = 9 + 1 = 10 ≥ 10
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
             assertThat(violations.get(0).ruleId()).isEqualTo(3L);
@@ -141,10 +140,10 @@ class ViolationRulesTest {
         void orderCountBelowLimit_noViolation() {
             ViolationRule rule = ViolationRule.of(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 8, NOW);
+                true, BigDecimal.ZERO, null, null, 0, new BigDecimal("50000000"), 8, NOW);
 
             // todayOrderCount = 8, 새 카운트 = 8 + 1 = 9 < 10
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).isEmpty();
         }
@@ -154,9 +153,9 @@ class ViolationRulesTest {
         void sellOrder_alsoChecked() {
             ViolationRule rule = ViolationRule.of(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("5"));
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.SELL, BigDecimal.ZERO, null, new BigDecimal("50000000"), 4, NOW);
+                false, BigDecimal.ZERO, null, null, 0, new BigDecimal("50000000"), 4, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of(rule)).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of(rule)).check(context);
 
             assertThat(violations).hasSize(1);
         }
@@ -169,16 +168,16 @@ class ViolationRulesTest {
         @Test
         @DisplayName("여러 규칙 동시 위반 — 모두 기록")
         void multipleViolations_allRecorded() {
-            Holding holding = createHolding(new BigDecimal("60000000"), new BigDecimal("0.01"), 2);
             List<ViolationRule> rules = List.of(
                 ViolationRule.of(1L, RuleType.CHASE_BUY_BAN, new BigDecimal("5")),
                 ViolationRule.of(2L, RuleType.AVERAGING_DOWN_LIMIT, new BigDecimal("3")),
                 ViolationRule.of(3L, RuleType.OVERTRADING_LIMIT, new BigDecimal("10"))
             );
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, new BigDecimal("10"), holding, new BigDecimal("50000000"), 9, NOW);
+                true, new BigDecimal("10"), new BigDecimal("60000000"), new BigDecimal("0.01"),
+                2, new BigDecimal("50000000"), 9, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(rules).check(context);
+            List<DetectedViolation> violations = new ViolationRules(rules).check(context);
 
             assertThat(violations).hasSize(3);
         }
@@ -187,22 +186,11 @@ class ViolationRulesTest {
         @DisplayName("규칙 없음 → 빈 리스트")
         void noRules_emptyList() {
             ViolationCheckContext context = new ViolationCheckContext(
-                Side.BUY, BigDecimal.ZERO, null, new BigDecimal("50000000"), 0, NOW);
+                true, BigDecimal.ZERO, null, null, 0, new BigDecimal("50000000"), 0, NOW);
 
-            List<RuleViolation> violations = new ViolationRules(List.of()).check(context);
+            List<DetectedViolation> violations = new ViolationRules(List.of()).check(context);
 
             assertThat(violations).isEmpty();
         }
-    }
-
-    private Holding createHolding(BigDecimal avgBuyPrice, BigDecimal totalQuantity, int averagingDownCount) {
-        return Holding.builder()
-            .walletId(1L)
-            .coinId(1L)
-            .avgBuyPrice(avgBuyPrice)
-            .totalQuantity(totalQuantity)
-            .totalBuyAmount(avgBuyPrice.multiply(totalQuantity))
-            .averagingDownCount(averagingDownCount)
-            .build();
     }
 }
