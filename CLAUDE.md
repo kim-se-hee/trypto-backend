@@ -160,7 +160,9 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 클래스명: `{UseCase명}Service` (예: `PlaceMarketBuyOrderService`)
 - 메서드명은 비즈니스 의미를 반영한다 (예: `placeMarketBuyOrder()`, `executeSwap()`)
 - 서비스는 순수 오케스트레이션만 담당한다. 검증, 계산, 분기 등 비즈니스 로직은 도메인 모델과 VO에 위임한다
+- 의존성 주입 필드 순서: 자기 컨텍스트 Output Port → 크로스 컨텍스트 UseCase (컨텍스트별 그룹) → 인프라(Clock 등). 각 그룹 사이에 빈 줄을 둔다
 - 오케스트레이션의 각 단계를 private 메서드로 추출하여 public 메서드의 가독성을 높인다
+- private 메서드에는 원시값을 분해하여 넘기지 않고 부모 객체(command, mapping 등)를 직접 전달한다. private 메서드 내부에서 필요한 값을 꺼내 쓴다
 - 쓰기 작업에 `@Transactional`을 선언한다
 - 생성 시 검증은 도메인 모델이나 VO의 팩토리 메서드(`create`, `of` 등)에서 수행한다. 서비스에서 검증 후 생성하지 않는다
 - 컬렉션에 대한 검증이나 계산(`stream`으로 합산, 중복 체크 등)은 일급 컬렉션으로 캡슐화한다
@@ -174,6 +176,10 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - Entity에는 `@Getter`만 허용하고 `@Setter`, `@Data` 금지. 상태 변경은 비즈니스 의미를 가진 메서드로만 수행한다
 - 원시 타입이 단위, 제한, 계산 등 비즈니스 규칙을 가지면 VO로 감싼다 (primitive obsession 방지)
 - 원시 타입이나 제네릭 컬렉션(`Map<Long, X>` 등)이 주변 코드의 추상화 수준을 깨뜨리면 VO나 도메인 모델로 감싸서 가독성을 높인다. 비즈니스 규칙이 없더라도 타입 이름이 도메인 의도를 전달하거나 null 처리 같은 사용 패턴을 캡슐화할 수 있다면 감싸는 것이 낫다
+- 항상 함께 이동하는 필드 묶음은 VO로 추출한다. 
+- 단, 크로스 컨텍스트 경계의 Query/Result DTO에서는 다른 컨텍스트의 도메인 타입을 참조할 수 없으므로 primitive 전달을 해도 된다
+- boolean/원시값 → enum/VO 변환은 도메인 팩토리 메서드에 캡슐화한다 (예: `TradingVenue.of(feeRate, baseCurrencyCoinId, domestic)`)
+- enum 비교(`getSide() == Side.BUY`)는 도메인 모델의 판별 메서드로 감싼다 (예: `order.isBuyOrder()`)
 - VO는 불변 객체로 만든다. 모든 필드 `final`, 변경이 필요하면 새 객체를 생성한다
 - VO는 `equals()`/`hashCode()`를 반드시 구현한다
 - 일급 컬렉션을 활용하여 컬렉션 관련 로직을 캡슐화하려고 노력한다
@@ -186,6 +192,12 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 @SQLDelete(sql = "UPDATE user SET is_deleted = true WHERE user_id = ?")
 @Where(clause = "is_deleted = false")
 ```
+
+**Output Port**
+- Output Port는 `port.out.dto`를 사용하지 않는다. 도메인 모델 또는 도메인 VO만 반환한다
+- 조회 컬럼이 JPA 엔티티 필드와 대체로 일치하면 도메인 모델을 직접 반환한다 (Adapter에서 `toDomain()` 활용)
+- 집계 쿼리(GROUP BY, COUNT, AVG)나 엔티티와 구조가 크게 다른 프로젝션은 별도 도메인 VO를 만들어 반환한다
+- 도메인 VO 이름은 유비쿼터스 언어를 사용한다. `Info`, `Detail`, `Projection` 같은 기술 접미사 대신 도메인 개념을 표현한다 (예: `FilledOrder`, `HoldingSummary`, `RankingStats`)
 
 **Adapter Out**
 - `adapter/out/` 하위에 `entity/`, `repository/` 패키지로 분리한다. Adapter 클래스는 `adapter/out/`에 그대로 둔다

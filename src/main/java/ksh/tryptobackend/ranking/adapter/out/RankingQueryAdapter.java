@@ -4,11 +4,10 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingJpaEntity;
-import ksh.tryptobackend.user.adapter.out.entity.QUserJpaEntity;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.dto.RankingStatsProjection;
-import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
+import ksh.tryptobackend.ranking.domain.vo.RankingStats;
+import ksh.tryptobackend.ranking.domain.vo.RankingSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +23,6 @@ public class RankingQueryAdapter implements RankingQueryPort {
     private final JPAQueryFactory queryFactory;
 
     private static final QRankingJpaEntity ranking = QRankingJpaEntity.rankingJpaEntity;
-    private static final QUserJpaEntity user = QUserJpaEntity.userJpaEntity;
 
     @Override
     public Optional<LocalDate> findLatestReferenceDate(RankingPeriod period) {
@@ -38,17 +36,14 @@ public class RankingQueryAdapter implements RankingQueryPort {
     }
 
     @Override
-    public List<RankingWithUserProjection> findRankings(RankingPeriod period, LocalDate referenceDate, Integer cursorRank, int size) {
+    public List<RankingSummary> findRankings(RankingPeriod period, LocalDate referenceDate, Integer cursorRank, int size) {
         return queryFactory
-            .select(Projections.constructor(RankingWithUserProjection.class,
+            .select(Projections.constructor(RankingSummary.class,
                 ranking.rank,
                 ranking.userId,
-                user.nickname,
                 ranking.profitRate,
-                ranking.tradeCount,
-                user.portfolioPublic))
+                ranking.tradeCount))
             .from(ranking)
-            .join(user).on(ranking.userId.eq(user.id))
             .where(ranking.period.eq(period)
                 .and(ranking.referenceDate.eq(referenceDate)),
                 cursorRankGt(cursorRank))
@@ -58,17 +53,14 @@ public class RankingQueryAdapter implements RankingQueryPort {
     }
 
     @Override
-    public Optional<RankingWithUserProjection> findByUserIdAndPeriodAndReferenceDate(Long userId, RankingPeriod period, LocalDate referenceDate) {
-        RankingWithUserProjection result = queryFactory
-            .select(Projections.constructor(RankingWithUserProjection.class,
+    public Optional<RankingSummary> findByUserIdAndPeriodAndReferenceDate(Long userId, RankingPeriod period, LocalDate referenceDate) {
+        RankingSummary result = queryFactory
+            .select(Projections.constructor(RankingSummary.class,
                 ranking.rank,
                 ranking.userId,
-                user.nickname,
                 ranking.profitRate,
-                ranking.tradeCount,
-                user.portfolioPublic))
+                ranking.tradeCount))
             .from(ranking)
-            .join(user).on(ranking.userId.eq(user.id))
             .where(ranking.userId.eq(userId)
                 .and(ranking.period.eq(period))
                 .and(ranking.referenceDate.eq(referenceDate)))
@@ -78,9 +70,9 @@ public class RankingQueryAdapter implements RankingQueryPort {
     }
 
     @Override
-    public RankingStatsProjection getRankingStats(RankingPeriod period, LocalDate referenceDate) {
+    public RankingStats getRankingStats(RankingPeriod period, LocalDate referenceDate) {
         return queryFactory
-            .select(Projections.constructor(RankingStatsProjection.class,
+            .select(Projections.constructor(RankingStats.class,
                 ranking.count(),
                 ranking.profitRate.max(),
                 ranking.profitRate.avg().castToNum(BigDecimal.class)))

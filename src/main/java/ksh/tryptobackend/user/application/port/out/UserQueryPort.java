@@ -2,11 +2,15 @@ package ksh.tryptobackend.user.application.port.out;
 
 import ksh.tryptobackend.user.domain.model.User;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserQueryPort {
 
     Optional<User> findById(Long userId);
+
+    List<User> findByIds(Set<Long> userIds);
 
     boolean existsByNickname(String nickname);
 }

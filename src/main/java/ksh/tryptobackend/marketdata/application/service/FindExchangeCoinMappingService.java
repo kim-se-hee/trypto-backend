@@ -19,11 +19,11 @@ public class FindExchangeCoinMappingService implements FindExchangeCoinMappingUs
     @Override
     public Optional<ExchangeCoinMappingResult> findById(Long exchangeCoinId) {
         return exchangeCoinQueryPort.findById(exchangeCoinId)
-            .map(m -> new ExchangeCoinMappingResult(m.exchangeCoinId(), m.exchangeId(), m.coinId()));
+            .map(ec -> new ExchangeCoinMappingResult(ec.exchangeCoinId(), ec.exchangeId(), ec.coinId()));
     }
 
     @Override
     public Map<Long, Long> findExchangeCoinIdMap(Long exchangeId, List<Long> coinIds) {
-        return exchangeCoinQueryPort.findExchangeCoinIdMap(exchangeId, coinIds);
+        return exchangeCoinQueryPort.findExchangeCoinIdMap(exchangeId, coinIds).toMap();
     }
 }

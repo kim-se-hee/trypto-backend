@@ -1,15 +1,15 @@
 package ksh.tryptobackend.marketdata.application.port.out;
 
-import ksh.tryptobackend.marketdata.application.port.out.dto.CoinInfo;
+import ksh.tryptobackend.marketdata.domain.model.Coin;
+import ksh.tryptobackend.marketdata.domain.vo.CoinSymbols;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface CoinQueryPort {
 
-    Map<Long, String> findSymbolsByIds(Set<Long> coinIds);
+    CoinSymbols findSymbolsByIds(Set<Long> coinIds);
 
-    List<CoinInfo> findByIds(Set<Long> coinIds);
+    List<Coin> findByIds(Set<Long> coinIds);
 
 }

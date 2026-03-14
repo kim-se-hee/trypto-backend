@@ -3,7 +3,8 @@ package ksh.tryptobackend.marketdata.adapter.out;
 import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeCoinJpaEntity;
 import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeCoinJpaRepository;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinQueryPort;
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeCoinMapping;
+import ksh.tryptobackend.marketdata.domain.model.ExchangeCoin;
+import ksh.tryptobackend.marketdata.domain.vo.ExchangeCoinIdMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,14 +20,15 @@ public class ExchangeCoinQueryAdapter implements ExchangeCoinQueryPort {
     private final ExchangeCoinJpaRepository repository;
 
     @Override
-    public Optional<ExchangeCoinMapping> findById(Long exchangeCoinId) {
+    public Optional<ExchangeCoin> findById(Long exchangeCoinId) {
         return repository.findById(exchangeCoinId)
-            .map(e -> new ExchangeCoinMapping(e.getId(), e.getExchangeId(), e.getCoinId()));
+            .map(ExchangeCoinJpaEntity::toDomain);
     }
 
     @Override
-    public Map<Long, Long> findExchangeCoinIdMap(Long exchangeId, List<Long> coinIds) {
-        return repository.findByExchangeIdAndCoinIdIn(exchangeId, coinIds).stream()
+    public ExchangeCoinIdMap findExchangeCoinIdMap(Long exchangeId, List<Long> coinIds) {
+        Map<Long, Long> map = repository.findByExchangeIdAndCoinIdIn(exchangeId, coinIds).stream()
             .collect(Collectors.toMap(ExchangeCoinJpaEntity::getCoinId, ExchangeCoinJpaEntity::getId));
+        return new ExchangeCoinIdMap(map);
     }
 }

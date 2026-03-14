@@ -3,7 +3,7 @@ package ksh.tryptobackend.portfolio.application.service;
 import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotsUseCase;
 import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotInfoResult;
 import ksh.tryptobackend.portfolio.application.port.out.PortfolioSnapshotQueryPort;
-import ksh.tryptobackend.portfolio.application.port.out.dto.SnapshotInfo;
+import ksh.tryptobackend.portfolio.domain.vo.SnapshotOverview;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,11 +29,8 @@ public class FindSnapshotsService implements FindSnapshotsUseCase {
             .toList();
     }
 
-    private SnapshotInfoResult toResult(SnapshotInfo info) {
-        return new SnapshotInfoResult(
-            info.snapshotId(), info.roundId(), info.exchangeId(),
-            info.totalAsset(), info.totalInvestment(),
-            info.totalProfitRate(), info.snapshotDate()
-        );
+    private SnapshotInfoResult toResult(SnapshotOverview info) {
+        return new SnapshotInfoResult(info.snapshotId(), info.roundId(), info.exchangeId(),
+            info.totalAsset(), info.totalInvestment(), info.totalProfitRate(), info.snapshotDate());
     }
 }

@@ -4,6 +4,7 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.RoundInfoResult;
+import ksh.tryptobackend.marketdata.application.port.in.FindBtcDailyPricesUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
 import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotsUseCase;
@@ -13,7 +14,6 @@ import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretC
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyComparison;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
-import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
@@ -23,6 +23,7 @@ import ksh.tryptobackend.regretanalysis.domain.vo.AnalysisRoundStatus;
 import ksh.tryptobackend.regretanalysis.domain.vo.AssetTimeline;
 import ksh.tryptobackend.regretanalysis.domain.vo.BtcBenchmark;
 import ksh.tryptobackend.regretanalysis.domain.vo.BtcDailyPrice;
+import ksh.tryptobackend.regretanalysis.domain.vo.BtcDailyPrices;
 import ksh.tryptobackend.regretanalysis.domain.vo.CumulativeLossTimeline;
 import ksh.tryptobackend.regretanalysis.domain.vo.ViolationMarkers;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +42,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final FindSnapshotsUseCase findSnapshotsUseCase;
     private final RegretReportQueryPort regretReportQueryPort;
-    private final BtcPriceHistoryQueryPort btcPriceHistoryQueryPort;
+    private final FindBtcDailyPricesUseCase findBtcDailyPricesUseCase;
 
     @Override
     @Transactional(readOnly = true)
@@ -122,12 +121,13 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private BtcBenchmark buildBtcBenchmark(AssetTimeline timeline, String currency) {
-        List<BtcDailyPrice> btcPrices = btcPriceHistoryQueryPort.findBtcDailyPrices(
-            timeline.getStartDate(), timeline.getEndDate(), currency);
-        Map<LocalDate, BigDecimal> priceMap = btcPrices.stream()
-            .collect(Collectors.toMap(BtcDailyPrice::date, BtcDailyPrice::closePrice));
+        List<BtcDailyPrice> btcPrices = findBtcDailyPricesUseCase.findBtcDailyPrices(
+                timeline.getStartDate(), timeline.getEndDate(), currency).stream()
+            .map(r -> new BtcDailyPrice(r.date(), r.closePrice()))
+            .toList();
+        BtcDailyPrices dailyPrices = BtcDailyPrices.of(btcPrices);
 
-        return BtcBenchmark.calculate(timeline.getSeedMoney(), priceMap, timeline.getDates(), timeline.getStartDate());
+        return BtcBenchmark.calculate(timeline.getSeedMoney(), dailyPrices.toMap(), timeline.getDates(), timeline.getStartDate());
     }
 
     private List<DailyComparison> mapToAssetHistory(AssetTimeline timeline,
