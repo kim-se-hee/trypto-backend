@@ -25,6 +25,7 @@ public class FindTransferHistoryService implements FindTransferHistoryUseCase {
     private final TransferQueryPort transferQueryPort;
 
     private final GetWalletOwnerIdUseCase getWalletOwnerIdUseCase;
+
     private final FindCoinSymbolsUseCase findCoinSymbolsUseCase;
 
     @Override
