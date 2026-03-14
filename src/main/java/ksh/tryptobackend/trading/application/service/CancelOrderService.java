@@ -8,7 +8,7 @@ import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.domain.model.Order;
-import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
@@ -47,19 +47,18 @@ public class CancelOrderService implements CancelOrderUseCase {
     }
 
     private void unlockBalance(Order order) {
-        ListedCoinRef listedCoin = getListedCoin(order.getExchangeCoinId());
+        ExchangeCoinMappingResult mapping = getExchangeCoinMapping(order.getExchangeCoinId());
 
         if (order.getSide() == Side.BUY) {
-            TradingVenue venue = getTradingVenue(listedCoin.exchangeId());
+            TradingVenue venue = getTradingVenue(mapping.exchangeId());
             manageWalletBalanceUseCase.unlockBalance(order.getWalletId(), venue.baseCurrencyCoinId(), order.getSettlementDebit());
         } else {
-            manageWalletBalanceUseCase.unlockBalance(order.getWalletId(), listedCoin.coinId(), order.getQuantity().value());
+            manageWalletBalanceUseCase.unlockBalance(order.getWalletId(), mapping.coinId(), order.getQuantity().value());
         }
     }
 
-    private ListedCoinRef getListedCoin(Long exchangeCoinId) {
+    private ExchangeCoinMappingResult getExchangeCoinMapping(Long exchangeCoinId) {
         return findExchangeCoinMappingUseCase.findById(exchangeCoinId)
-            .map(m -> new ListedCoinRef(m.exchangeCoinId(), m.exchangeId(), m.coinId()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_COIN_NOT_FOUND));
     }
 

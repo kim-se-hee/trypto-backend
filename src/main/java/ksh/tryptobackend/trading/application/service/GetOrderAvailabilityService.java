@@ -8,7 +8,7 @@ import ksh.tryptobackend.trading.application.port.in.GetOrderAvailabilityUseCase
 import ksh.tryptobackend.trading.application.port.in.dto.query.GetOrderAvailabilityQuery;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderAvailabilityResult;
 import ksh.tryptobackend.marketdata.application.port.in.GetLivePriceUseCase;
-import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
@@ -31,18 +31,17 @@ public class GetOrderAvailabilityService implements GetOrderAvailabilityUseCase 
     @Override
     @Transactional(readOnly = true)
     public OrderAvailabilityResult getAvailability(GetOrderAvailabilityQuery query) {
-        ListedCoinRef listedCoin = getListedCoin(query.exchangeCoinId());
-        TradingVenue venue = getTradingVenue(listedCoin.exchangeId());
+        ExchangeCoinMappingResult mapping = getExchangeCoinMapping(query.exchangeCoinId());
+        TradingVenue venue = getTradingVenue(mapping.exchangeId());
 
-        BigDecimal available = getAvailableBalance(query.walletId(), query.side(), venue, listedCoin);
+        BigDecimal available = getAvailableBalance(query.walletId(), query.side(), venue, mapping);
         BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(query.exchangeCoinId());
 
         return new OrderAvailabilityResult(available, currentPrice);
     }
 
-    private ListedCoinRef getListedCoin(Long exchangeCoinId) {
+    private ExchangeCoinMappingResult getExchangeCoinMapping(Long exchangeCoinId) {
         return findExchangeCoinMappingUseCase.findById(exchangeCoinId)
-            .map(m -> new ListedCoinRef(m.exchangeCoinId(), m.exchangeId(), m.coinId()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_COIN_NOT_FOUND));
     }
 
@@ -56,10 +55,10 @@ public class GetOrderAvailabilityService implements GetOrderAvailabilityUseCase 
     }
 
     private BigDecimal getAvailableBalance(Long walletId, Side side,
-                                            TradingVenue venue, ListedCoinRef listedCoin) {
+                                            TradingVenue venue, ExchangeCoinMappingResult mapping) {
         Long targetCoinId = side == Side.BUY
             ? venue.baseCurrencyCoinId()
-            : listedCoin.coinId();
+            : mapping.coinId();
         return getAvailableBalanceUseCase.getAvailableBalance(walletId, targetCoinId);
     }
 }

@@ -17,8 +17,8 @@ import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategy;
 import ksh.tryptobackend.trading.domain.model.Holding;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
-import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
@@ -59,29 +59,28 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     }
 
     private Order executeOrder(PlaceOrderCommand command) {
-        ListedCoinRef listedCoin = getListedCoin(command.exchangeCoinId());
-        TradingVenue venue = getTradingVenue(listedCoin.exchangeId());
+        ExchangeCoinMappingResult mapping = getExchangeCoinMapping(command.exchangeCoinId());
+        TradingVenue venue = getTradingVenue(mapping.exchangeId());
         OrderPlacementStrategy strategy = strategies.resolve(command.orderType(), command.side());
         BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(command.exchangeCoinId());
 
         Order order = strategy.createOrder(command, venue, currentPrice, LocalDateTime.now(clock));
-        validateBalance(strategy, order, command.walletId(), venue, listedCoin.coinId());
+        validateBalance(strategy, order, command.walletId(), venue, mapping.coinId());
 
         List<RuleViolation> violations = checkOrderViolations(
-            order, command.walletId(), command.exchangeCoinId(), listedCoin.coinId(), currentPrice);
+            order, command.walletId(), command.exchangeCoinId(), mapping.coinId(), currentPrice);
         order.addViolations(violations);
 
-        applyBalanceChanges(strategy, order, command.walletId(), venue, listedCoin.coinId());
+        applyBalanceChanges(strategy, order, command.walletId(), venue, mapping.coinId());
 
         Order savedOrder = orderCommandPort.save(order);
-        updateHoldingIfMarketOrder(order, command.walletId(), listedCoin.coinId(), currentPrice);
+        updateHoldingIfMarketOrder(order, command.walletId(), mapping.coinId(), currentPrice);
 
         return savedOrder;
     }
 
-    private ListedCoinRef getListedCoin(Long exchangeCoinId) {
+    private ExchangeCoinMappingResult getExchangeCoinMapping(Long exchangeCoinId) {
         return findExchangeCoinMappingUseCase.findById(exchangeCoinId)
-            .map(m -> new ListedCoinRef(m.exchangeCoinId(), m.exchangeId(), m.coinId()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_COIN_NOT_FOUND));
     }
 
