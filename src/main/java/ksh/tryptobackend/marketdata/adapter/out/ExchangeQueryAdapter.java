@@ -11,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -39,6 +42,12 @@ public class ExchangeQueryAdapter implements ExchangeQueryPort {
         return repository.findAll().stream()
                 .map(ExchangeJpaEntity::getId)
                 .toList();
+    }
+
+    @Override
+    public Map<Long, String> findNamesByIds(Set<Long> exchangeIds) {
+        return repository.findAllById(exchangeIds).stream()
+            .collect(Collectors.toMap(ExchangeJpaEntity::getId, ExchangeJpaEntity::getName));
     }
 
     private ExchangeSummary toExchangeSummary(ExchangeJpaEntity entity) {
