@@ -117,19 +117,55 @@ git rebase origin/main
 2. 해결 후 `git add <충돌-파일>` → `git rebase --continue`
 3. 모든 충돌이 해결될 때까지 반복한다
 
-### 5. 리모트 푸시
+### 5. 문서 동기화
+
+리모트 푸시 전에 브랜치의 변경 사항을 분석하여 관련 문서를 갱신한다. **변경이 없으면 이 단계를 건너뛴다.**
+
+#### 5-1. 데이터 모델 · 스키마 갱신
+
+`git diff main`에서 도메인 모델(`domain/model/`)이나 VO(`domain/vo/`), JPA 엔티티(`adapter/out/entity/`)가 **신규 생성되거나 필드가 변경**된 경우:
+
+1. `docs/data-model.md`의 Aggregate 구조 테이블·소유 관계·모듈 간 의존을 현재 코드 기준으로 갱신한다.
+2. `docs/schema.md`의 ERD를 현재 JPA 엔티티 기준으로 갱신한다.
+3. 갱신한 문서를 별도 커밋한다.
+
+```bash
+git add docs/data-model.md docs/schema.md
+git commit -m "docs: 데이터 모델 및 스키마 문서 동기화"
+```
+
+#### 5-2. 크로스 컨텍스트 인터페이스 동기화
+
+`git diff main`에서 **다른 컨텍스트가 소비하는 UseCase(`application/port/in/`)나 Result/Command DTO가 신규 생성되거나 시그니처가 변경**된 경우:
+
+1. 해당 컨텍스트의 `docs/ai-context/cross-context/{context}.md`를 현재 코드 기준으로 갱신한다.
+   - UseCase 인터페이스의 메서드 시그니처를 동기화한다.
+   - Command/Result DTO의 필드 목록을 동기화한다.
+   - 신규 UseCase/DTO는 추가하고, 삭제된 것은 제거한다.
+2. 갱신한 문서를 별도 커밋한다.
+
+```bash
+git add docs/ai-context/cross-context/<context>.md
+git commit -m "docs: <context> 크로스 컨텍스트 인터페이스 문서 동기화"
+```
+
+**판단 기준:**
+- `port/in/` 하위의 UseCase 인터페이스나 `port/in/dto/` 하위의 Command/Query/Result DTO가 diff에 포함되어야 한다.
+- 서비스 내부 변경만 있고 포트 시그니처가 동일하면 동기화하지 않는다.
+
+### 6. 리모트 푸시
 
 ```bash
 git push origin <현재-브랜치명>
 ```
 
-### 6. PR 생성 규칙
+### 7. PR 생성 규칙
 
 - **절대 `git add`나 `git commit`을 실행하지 않는다.**
 - Base 브랜치는 반드시 `main`이다.
 - 현재 브랜치 상태 그대로 PR을 생성한다.
 
-### 7. PR 제목 컨벤션
+### 8. PR 제목 컨벤션
 
 ```
 [#ISSUE_NUMBER] 간결한 PR 설명
@@ -144,7 +180,7 @@ git push origin <현재-브랜치명>
 [#15] 지정가 매수 주문 시 수수료 미반영 수정
 ```
 
-### 8. PR 본문
+### 9. PR 본문
 
 PR #2를 베스트 프랙티스로 참고한다. 아래 레이아웃을 기본 골격으로 사용하되, 변경 규모에 맞게 섹션을 조정한다.
 
@@ -222,7 +258,7 @@ EOF
 )" --label "<라벨>" --assignee "kim-se-hee"
 ```
 
-### 9. Squash Merge
+### 10. Squash Merge
 
 PR 생성 후 즉시 main으로 Squash Merge한다.
 
@@ -244,7 +280,7 @@ gh pr merge --squash --subject "[#N] PR 제목 (#PR_NUMBER)" --body ""
 [#12] CEX 시장가/지정가 주문 기능 구현 (#13)
 ```
 
-### 10. 로컬 정리
+### 11. 로컬 정리
 
 머지 완료 후 로컬을 최신 상태로 맞추고 브랜치를 삭제한다.
 
