@@ -55,6 +55,9 @@ public enum ErrorCode {
     WITHDRAWAL_FEE_NOT_FOUND(404, "withdrawal.fee.not.found"),
 
     PRICE_NOT_AVAILABLE(500, "price.not.available"),
+
+    INVALID_CANDLE_INTERVAL(400, "invalid.candle.interval"),
+    INVALID_CANDLE_LIMIT(400, "invalid.candle.limit"),
     ;
 
     private final int status;
