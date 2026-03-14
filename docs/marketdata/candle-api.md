@@ -135,7 +135,7 @@ LIMIT 90
 | UseCase | `FindCandlesUseCase` | 캔들 조회 유스케이스 인터페이스 |
 | Service | `FindCandlesService` | 오케스트레이션 (Output Port 호출) |
 | Output Port | `CandleQueryPort` | InfluxDB 캔들 조회 포트 인터페이스 |
-| Adapter | `CandleInfluxPersistenceAdapter` | InfluxDB 클라이언트로 직접 쿼리 |
+| Adapter | `CandleQueryAdapter` | InfluxDB 클라이언트로 직접 쿼리 |
 
 ## DTO 흐름
 
@@ -165,7 +165,7 @@ public interface CandleQueryPort {
 
 ## Adapter
 
-- `CandleInfluxPersistenceAdapter`는 InfluxDB Java 클라이언트를 사용하여 쿼리한다
+- `CandleQueryAdapter`는 InfluxDB Java 클라이언트를 사용하여 쿼리한다
 - JPA/MySQL을 사용하지 않는다
 - `adapter/out/` 패키지에 위치한다
 
@@ -177,7 +177,7 @@ sequenceDiagram
     participant Controller as CandleController
     participant Service as FindCandlesService
     participant Port as CandleQueryPort
-    participant Adapter as CandleInfluxPersistenceAdapter
+    participant Adapter as CandleQueryAdapter
     participant InfluxDB
 
     Client->>Controller: GET /api/candles?exchange=UPBIT&coin=BTC&interval=1d&limit=90
@@ -207,7 +207,7 @@ sequenceDiagram
     participant Client
     participant Controller as CandleController
     participant Service as FindCandlesService
-    participant Adapter as CandleInfluxPersistenceAdapter
+    participant Adapter as CandleQueryAdapter
     participant InfluxDB
 
     Client->>Controller: GET /api/candles?exchange=UPBIT&coin=BTC&interval=1d&limit=90&cursor=2026-03-10T00:00:00Z

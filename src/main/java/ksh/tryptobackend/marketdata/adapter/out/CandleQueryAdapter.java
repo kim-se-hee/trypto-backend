@@ -20,7 +20,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class CandleInfluxPersistenceAdapter implements CandleQueryPort {
+public class CandleQueryAdapter implements CandleQueryPort {
 
     private static final int RANGE_MULTIPLIER = 2;
 
