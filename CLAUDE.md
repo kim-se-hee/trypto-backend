@@ -160,6 +160,7 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 클래스명: `{UseCase명}Service` (예: `PlaceMarketBuyOrderService`)
 - 메서드명은 비즈니스 의미를 반영한다 (예: `placeMarketBuyOrder()`, `executeSwap()`)
 - 서비스는 순수 오케스트레이션만 담당한다. 검증, 계산, 분기 등 비즈니스 로직은 도메인 모델과 VO에 위임한다
+- 의존성 주입 필드 순서: 자기 컨텍스트 Output Port → 크로스 컨텍스트 UseCase (컨텍스트별 그룹) → 인프라(Clock 등). 각 그룹 사이에 빈 줄을 둔다
 - 오케스트레이션의 각 단계를 private 메서드로 추출하여 public 메서드의 가독성을 높인다
 - private 메서드에는 원시값을 분해하여 넘기지 않고 부모 객체(command, mapping 등)를 직접 전달한다. private 메서드 내부에서 필요한 값을 꺼내 쓴다
 - 쓰기 작업에 `@Transactional`을 선언한다
