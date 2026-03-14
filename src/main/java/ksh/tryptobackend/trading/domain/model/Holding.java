@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.domain.model;
 
+import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -29,6 +30,14 @@ public class Holding {
             .totalBuyAmount(BigDecimal.ZERO)
             .averagingDownCount(0)
             .build();
+    }
+
+    public void applyOrder(Side side, BigDecimal filledPrice, BigDecimal quantity, BigDecimal currentPrice) {
+        if (side == Side.BUY) {
+            applyBuy(filledPrice, quantity, currentPrice);
+        } else {
+            applySell(quantity);
+        }
     }
 
     public void applyBuy(BigDecimal filledPrice, BigDecimal filledQuantity, BigDecimal currentPrice) {
