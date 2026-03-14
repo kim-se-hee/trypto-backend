@@ -27,6 +27,44 @@ interface FindCandlesParams {
   cursor?: string;
 }
 
+function normalizeCandleDate(date: Date, interval: CandleInterval): Date {
+  const normalized = new Date(date);
+  normalized.setMilliseconds(0);
+
+  switch (interval) {
+    case "1m":
+      normalized.setSeconds(0);
+      return normalized;
+    case "1h":
+      normalized.setMinutes(0, 0, 0);
+      return normalized;
+    case "4h":
+      normalized.setMinutes(0, 0, 0);
+      normalized.setHours(Math.floor(normalized.getHours() / 4) * 4);
+      return normalized;
+    case "1d":
+      normalized.setHours(0, 0, 0, 0);
+      return normalized;
+    case "1w": {
+      normalized.setHours(0, 0, 0, 0);
+      const day = normalized.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      normalized.setDate(normalized.getDate() - diff);
+      return normalized;
+    }
+    case "1M":
+      normalized.setHours(0, 0, 0, 0);
+      normalized.setDate(1);
+      return normalized;
+  }
+}
+
+export function normalizeCandleTime(time: string, interval: CandleInterval): string {
+  const date = new Date(time);
+  if (Number.isNaN(date.getTime())) return time;
+  return normalizeCandleDate(date, interval).toISOString();
+}
+
 const DEFAULT_CANDLE_API_PATH =
   (import.meta.env.VITE_CANDLE_API_PATH as string | undefined) ?? "/api/candles";
 
@@ -58,7 +96,7 @@ export async function findCandles({
 
   return data
     .map((item) => ({
-      time: item.time ?? item.timestamp ?? "",
+      time: normalizeCandleTime(item.time ?? item.timestamp ?? "", interval),
       open: Number(item.open),
       high: Number(item.high),
       low: Number(item.low),

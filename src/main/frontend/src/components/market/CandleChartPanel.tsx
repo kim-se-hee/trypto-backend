@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { formatChangeRate, formatPrice, getCurrencySymbol } from "@/lib/formatters";
 import {
   findCandles,
+  normalizeCandleTime,
   resolveCandleExchangeCode,
   type CandleInterval,
   type CandleItem,
@@ -36,7 +37,7 @@ const DEFAULT_VISIBLE_COUNT: Record<CandleInterval, number> = {
 const MIN_VISIBLE_COUNT = 12;
 const CHART_WIDTH = 960;
 const CHART_HEIGHT = 440;
-const PADDING = { top: 20, right: 88, bottom: 42, left: 20 };
+const PADDING = { top: 20, right: 124, bottom: 42, left: 20 };
 const TOOLTIP_WIDTH = 220;
 const TOOLTIP_HEIGHT = 138;
 const TOOLTIP_OFFSET_X = 10;
@@ -50,29 +51,16 @@ function formatAxisLabel(value: number, baseCurrency: string): string {
   return `${getCurrencySymbol(baseCurrency)}${formatPrice(value, baseCurrency)}`;
 }
 
-function formatTooltipTime(time: string, interval: CandleInterval): string {
+function formatTooltipTime(time: string): string {
   const date = new Date(time);
   if (Number.isNaN(date.getTime())) return "-";
-
-  if (interval === "1m" || interval === "1h" || interval === "4h") {
-    return new Intl.DateTimeFormat("ko-KR", {
-      month: "numeric",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  }
-
-  if (interval === "1M") {
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "numeric",
-    }).format(date);
-  }
-
   return new Intl.DateTimeFormat("ko-KR", {
+    year: "2-digit",
     month: "numeric",
     day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   }).format(date);
 }
 
@@ -171,8 +159,9 @@ function buildMockCandles(
     [...coin.sparkline.slice(-24), coin.currentPrice],
     candleCount + 1,
   );
-  const now = Date.now();
+  const now = new Date();
   const intervalMs = getIntervalMs(interval);
+  const lastCandleTime = new Date(normalizeCandleTime(now.toISOString(), interval));
 
   return Array.from({ length: candleCount }, (_, index) => {
     const openBase = baseSeries[index];
@@ -184,7 +173,9 @@ function buildMockCandles(
     const wickLow = amplitude * (0.35 + random() * 0.8);
 
     return {
-      time: new Date(now - (candleCount - index - 1) * intervalMs).toISOString(),
+      time: new Date(
+        lastCandleTime.getTime() - (candleCount - index - 1) * intervalMs,
+      ).toISOString(),
       open,
       high: Math.max(open, close) + wickHigh,
       low: Math.max(0, Math.min(open, close) - wickLow),
@@ -700,7 +691,7 @@ export function CandleChartPanel({
                 top: `${tooltipTop}px`,
               }}
             >
-              <p className="font-semibold">{formatTooltipTime(hoveredCandle.time, interval)}</p>
+              <p className="font-semibold">{formatTooltipTime(hoveredCandle.time)}</p>
               <div className="mt-2 space-y-0.5 font-mono">
                 <div className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-2">
                   <span className="text-white/70">시가</span>
@@ -723,9 +714,6 @@ export function CandleChartPanel({
           )}
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">
-          마우스 휠로 확대/축소, 드래그로 좌우 이동이 가능합니다.
-        </p>
       </div>
     </section>
   );
