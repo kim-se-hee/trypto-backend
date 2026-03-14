@@ -1,14 +1,13 @@
 ---
 description: >
-  기능 문서 기반 코드 구현. docs/{domain}/{feature}.md 기능 문서를 읽고 헥사고날 아키텍처에 따라
-  ErrorCode → Domain → Application → Adapter In → Adapter Out 순서로 전체 스택을 구현한다.
-  각 Phase마다 컴파일 검증 + 원자적 커밋을 수행한다. 에이전트 없이 메인 컨텍스트에서 직접 실행한다.
+  기능 문서 기반 코드 구현. 플랜 모드에서 생성된 docs/{domain}/{feature}.md를 읽고
+  CLAUDE.md 컨벤션에 따라 전체 스택을 구현한다.
   TRIGGER: 사용자가 기능 구현을 요청하거나 /implement를 입력할 때.
 ---
 
 # 기능 문서 기반 코드 구현
 
-기능 문서(`docs/{domain}/{feature}.md`)를 읽고 헥사고날 아키텍처에 따라 코드를 구현한다. 에이전트 없이 메인 컨텍스트에서 직접 실행한다.
+기능 문서(`docs/{domain}/{feature}.md`)를 읽고 코드를 구현한다. 에이전트 없이 메인 컨텍스트에서 직접 실행한다.
 
 ## 입력
 
@@ -16,99 +15,88 @@ description: >
 
 ---
 
-## 워크플로우
+## 페이즈 추적
 
-### 0. 사전 검증
-
-기능 문서를 읽고 `[TODO]` 마커가 남아있는지 검사한다.
-
-- `[TODO]`가 있으면 목록을 출력하고 **즉시 중단**한다
-- `[CONFIRM]`은 무시한다 (이미 사람이 확인한 것으로 간주)
+각 Phase 시작 시 아래 명령어로 현재 페이즈를 기록한다. `{PHASE}` 부분만 해당 Phase 값으로 교체한다:
 
 ```bash
-grep -n "\[TODO\]" {문서경로}
+echo '{"phase":"{PHASE}","feature":"$ARGUMENTS"}' > "$HOME/.claude/implement-phase.json"
 ```
 
-### 1. 문서 분석
-
-기능 문서에서 아래 정보를 추출한다:
-
-- **도메인 모델**: Entity, VO, 일급 컬렉션
-- **비즈니스 규칙**: 검증 로직, 계산 공식, 상태 전이
-- **API 명세**: Method, Path, Request/Response, 에러 코드
-- **시퀀스 다이어그램**: 오케스트레이션 흐름
-- **크로스 도메인 의존성**: 필요한 Output Port
-
-### 2. 구현 (Phase 1 ~ 5)
-
-**컴파일 의존 방향을 따라** 순서대로 구현한다. 각 Phase 완료 후 컴파일 검증 + 커밋한다.
-
-#### Phase 1: ErrorCode + messages.properties
-
-- `common/exception/ErrorCode.java`에 에러 코드 추가
-- `src/main/resources/messages.properties`에 메시지 추가
-- 파라미터가 필요한 메시지는 `{0}`, `{1}` 플레이스홀더 사용
+워크플로우 종료 시 반드시 페이즈 파일을 삭제한다:
 
 ```bash
-./gradlew compileJava
+rm -f "$HOME/.claude/implement-phase.json"
 ```
 
-커밋: `feat: {도메인} {기능} ErrorCode 추가`
+---
 
-#### Phase 2: Domain (model + vo)
+## Phase 1: 탐색
 
-- Entity: 비즈니스 로직을 포함하는 도메인 모델
-- VO: 불변 객체, `equals()`/`hashCode()` 구현
-- 일급 컬렉션: 컬렉션 관련 로직 캡슐화
-- 팩토리 메서드: `create()`, `of()` 등으로 생성 시 검증
+**페이즈 마커: `explore`**
+
+이 단계에서는 반드시 읽기만 수행한다.
+
+### 사전 읽기
+
+구현 시작 전 아래 파일을 Read로 읽는다:
+
+1. `docs/ai-context/cross-context/{컨텍스트명}.md` — 기능 문서에서 연동하는 컨텍스트의 파일만 선택적으로 읽는다 (예: wallet, marketdata 연동이면 `wallet.md`, `marketdata.md`만)
+2. `docs/data-model.md` — 자기 컨텍스트의 엔티티·VO 구조 파악
+
+단일 컨텍스트 작업(크로스 컨텍스트 연동 없음)이면 1번은 생략한다.
+
+### 크로스 컨텍스트 경계 규칙
+
+- **구현 범위는 기능 문서의 대상 컨텍스트에 한정한다.** 다른 컨텍스트의 UseCase 구현체를 만들지 않는다
+- **다른 컨텍스트의 소스 코드를 읽지 않는다.** 시그니처와 DTO 구조는 `docs/ai-context/cross-context/` 파일만 참조한다
+- **크로스 컨텍스트 파일에 필요한 UseCase/DTO가 없으면 구현을 중단한다.** 어떤 선행 기능을 먼저 구현해야 하는지 사용자에게 알린다
+
+---
+
+## Phase 2: 구현
+
+**페이즈 마커: `implement`**
+
+CLAUDE.md의 코딩 컨벤션과 Git 컨벤션을 따라 구현한다.
+
+- 컴파일 의존 순서대로 구현한다 (domain → application → adapter)
+- 논리 단위마다 `./gradlew compileJava` 로 검증 후 커밋한다
+- 커밋 단위와 메시지는 CLAUDE.md의 Git 컨벤션을 따른다
+
+구현 완료 후 ArchUnit 테스트를 실행한다.
 
 ```bash
-./gradlew compileJava
+./gradlew test --tests "*ArchUnit*"
 ```
 
-커밋: `feat: {도메인} {기능} 도메인 모델 구현`
+ArchUnit 테스트가 전부 통과할 때까지 코드를 수정하고 재실행한다.
 
-#### Phase 3: Application (port/in, port/out, service)
-
-- **Input Port (UseCase)**: 인터페이스, 하나의 유스케이스에 하나의 메서드
-- **Output Port**: 인터페이스, 외부 의존성 추상화
-- **Command/Query DTO**: `application/port/in/dto/` 하위
-- **Result DTO**: 여러 Aggregate 조합이 필요한 경우만
-- **Service**: 순수 오케스트레이션, 각 단계를 private 메서드로 추출
+페이즈 추적을 종료한다:
 
 ```bash
-./gradlew compileJava
+rm -f "$HOME/.claude/implement-phase.json"
 ```
 
-커밋: `feat: {도메인} {기능} 애플리케이션 계층 구현`
+통과하면 Phase 3으로 넘어간다.
 
-#### Phase 4: Adapter In (controller, request/response DTO)
+---
 
-- **Request DTO**: `adapter/in/dto/request/`, Jakarta Validation
-- **Response DTO**: `adapter/in/dto/response/`
-- **Controller**: `@Valid` 검증 트리거, Request → Command 변환, `ApiResponseDto<T>` 래핑
+## Phase 3: 테스트
 
-```bash
-./gradlew compileJava
-```
+test-automator 서브에이전트에 위임한다.
 
-커밋: `feat: {도메인} {기능} 컨트롤러 구현`
+프롬프트에 아래 정보를 포함한다:
+- 기능 문서 경로
+- Phase 2에서 생성/수정한 파일 목록
 
-#### Phase 5: Adapter Out (entity, repository, adapter)
+## Phase 4: 코드 리뷰
 
-- **JPA Entity**: `adapter/out/entity/`, `@Column` 제약사항 명시
-- **JPA Repository**: `adapter/out/repository/`
-- **Persistence Adapter**: `adapter/out/`, Output Port 구현
-- 도메인 모델 ↔ JPA Entity 변환 메서드 포함
+아래 4개의 리뷰어 서브에이전트를 병렬로 실행한다.
 
-```bash
-./gradlew compileJava
-```
+- architecture-reviewer
+- code-quality-reviewer
+- performance-reviewer
+- concurrency-reviewer
 
-커밋: `feat: {도메인} {기능} 영속성 어댑터 구현`
-
-### 3. 최종 검증
-
-```bash
-./gradlew compileJava
-```
+리뷰 결과를 종합하여 사용자에게 보고한다.
