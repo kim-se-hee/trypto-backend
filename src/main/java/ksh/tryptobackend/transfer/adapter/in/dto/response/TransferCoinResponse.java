@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record TransferCoinResponse(
+    Long transferId,
     TransferStatus status,
     BigDecimal fee,
     TransferFailureReason failureReason,
@@ -16,6 +17,7 @@ public record TransferCoinResponse(
 
     public static TransferCoinResponse from(Transfer transfer) {
         return new TransferCoinResponse(
+            transfer.getTransferId(),
             transfer.getStatus(),
             transfer.getFee(),
             transfer.getFailureReason(),

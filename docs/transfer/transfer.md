@@ -106,7 +106,19 @@ Transfer (Aggregate Root)
 }
 ```
 
-## Response — SUCCESS
+## Response
+
+요청에 포함된 값(coinId, chain, amount 등)은 프론트가 이미 알고 있으므로 응답에서 제외한다. 서버만 알 수 있는 필드만 반환한다.
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| transferId | Long | 생성된 송금 ID (이체 내역 prepend 시 key·cursor로 사용) |
+| status | String | `SUCCESS` / `FROZEN` |
+| fee | BigDecimal | 출금 수수료 |
+| failureReason | String? | `WRONG_ADDRESS` / `WRONG_CHAIN` / `MISSING_TAG` (SUCCESS이면 null) |
+| frozenUntil | LocalDateTime? | 동결 해제 예정 시각 (SUCCESS이면 null) |
+
+### SUCCESS
 
 ```json
 {
@@ -115,23 +127,15 @@ Transfer (Aggregate Root)
   "message": "송금이 완료되었습니다.",
   "data": {
     "transferId": 1,
-    "fromWalletId": 1,
-    "toWalletId": 4,
-    "coinId": 1,
-    "chain": "Bitcoin",
-    "toAddress": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
-    "toTag": null,
-    "amount": 0.005,
-    "fee": 0.0005,
     "status": "SUCCESS",
+    "fee": 0.0005,
     "failureReason": null,
-    "frozenUntil": null,
-    "createdAt": "2026-03-03T14:30:00"
+    "frozenUntil": null
   }
 }
 ```
 
-## Response — FROZEN
+### FROZEN
 
 ```json
 {
@@ -140,18 +144,10 @@ Transfer (Aggregate Root)
   "message": "송금 자금이 동결되었습니다.",
   "data": {
     "transferId": 2,
-    "fromWalletId": 1,
-    "toWalletId": null,
-    "coinId": 1,
-    "chain": "ERC-20",
-    "toAddress": "0xinvalidaddress",
-    "toTag": null,
-    "amount": 0.005,
-    "fee": 0.0008,
     "status": "FROZEN",
+    "fee": 0.0008,
     "failureReason": "WRONG_ADDRESS",
-    "frozenUntil": "2026-03-04T14:30:00",
-    "createdAt": "2026-03-03T14:30:00"
+    "frozenUntil": "2026-03-04T14:30:00"
   }
 }
 ```
