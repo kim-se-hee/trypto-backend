@@ -6,41 +6,20 @@ import ksh.tryptobackend.transfer.domain.vo.TransferStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public record TransferCoinResponse(
-    Long transferId,
-    UUID idempotencyKey,
-    Long fromWalletId,
-    Long toWalletId,
-    Long coinId,
-    String chain,
-    String toAddress,
-    String toTag,
-    BigDecimal amount,
-    BigDecimal fee,
     TransferStatus status,
+    BigDecimal fee,
     TransferFailureReason failureReason,
-    LocalDateTime frozenUntil,
-    LocalDateTime createdAt
+    LocalDateTime frozenUntil
 ) {
 
     public static TransferCoinResponse from(Transfer transfer) {
         return new TransferCoinResponse(
-            transfer.getTransferId(),
-            transfer.getIdempotencyKey(),
-            transfer.getFromWalletId(),
-            transfer.getToWalletId(),
-            transfer.getCoinId(),
-            transfer.getChain(),
-            transfer.getToAddress(),
-            transfer.getToTag(),
-            transfer.getAmount(),
-            transfer.getFee(),
             transfer.getStatus(),
+            transfer.getFee(),
             transfer.getFailureReason(),
-            transfer.getFrozenUntil(),
-            transfer.getCreatedAt()
+            transfer.getFrozenUntil()
         );
     }
 }
