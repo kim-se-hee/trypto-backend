@@ -23,6 +23,9 @@ User → Nginx → Server A              시세 수집기 → Upbit/Bithumb/Bina
                                 Server A          Server B          Server C
                               (주문 있음)         (주문 없음)        (주문 없음)
                                     │                │                │
+                     exchange + symbol →   exchange + symbol →  exchange + symbol →
+                     exchangeCoinId 변환   exchangeCoinId 변환  exchangeCoinId 변환
+                                    │                │                │
                           로컬 캐시에서          해당 코인 주문       해당 코인 주문
                           매칭 대상 조회          없음 → skip        없음 → skip
                                     │
@@ -94,16 +97,51 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
 - **서버별 전용 큐**: 각 서버가 자기만의 큐를 가지며, 서버가 내려가면 큐에 메시지가 쌓이고 서버 복구 시 처리
 - 기존 Redis Pub/Sub 기반 클라이언트 스트리밍 채널과는 별도의 경로
 
+### 메시지 신뢰성
+
+**생산자 (시세 수집기)**
+- Publisher Confirms를 사용하여 브로커 수신을 확인한다. ack을 받지 못하면 재시도한다
+- 재시도로 동일 시세가 중복 발행될 수 있으나, 소비자가 멱등하게 처리하므로 문제없다
+
+**소비자 (트레이딩 서버)**
+- 메시지 수준에서는 requeue하지 않고 항상 ack 처리한다. requeue하면 큐 뒤로 밀려 최신 시세 처리를 지연시키고, 동일 예외가 반복되면 poison message가 된다
+- 체결 처리(`fillOrder`)에 한해 서비스 내부에서 즉시 재시도한다 (최대 2회, 50ms → 100ms backoff)
+- 하나의 시세 이벤트에 여러 주문이 매칭될 수 있으므로, 메시지 전체를 requeue하지 않고 실패한 체결만 개별 재시도한다. 이렇게 해야 이미 성공한 체결을 다시 처리하지 않는다
+
+- 실패 유형별 재시도 전략은 아래 "매칭 실패 및 예외 처리" 참조
+
 ## 시세 변경 이벤트 메시지
 
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| exchangeCoinId | Long | 거래소-코인 ID |
-| currentPrice | BigDecimal | 변경된 현재가 |
-| timestamp | Long | 시세 수신 시각 (epoch ms) |
+| 필드 | 타입 | 설명                              |
+|------|------|---------------------------------|
+| exchange | String | 거래소 명 (UPBIT, BITHUMB, BINANCE) |
+| symbol | String | 거래 페어 (BTC/KRW, ETH/USDT)       |
+| currentPrice | BigDecimal | 변경된 현재가                         |
+| timestamp | Long | 시세 수신 시각 (epoch ms)             |
 
-- `exchangeCoinId`를 포함해야 로컬 캐시에서 해당 코인의 미체결 주문을 즉시 조회할 수 있다
-- 시세 수집기가 Redis 적재 시 `exchangeCoinId`를 알지 못하는 경우, 이벤트 수신 서버에서 `exchange + base/quote → exchangeCoinId` 매핑을 캐싱하여 변환한다
+- 시세 수집기는 별도 서버이므로 트레이딩 서버의 DB 스키마(`exchangeCoinId`)를 알지 못한다. 시세 수집기가 아는 정보(거래소, 심볼)만 메시지에 포함한다
+- 이벤트 수신 서버(트레이딩 서버)에서 `exchange + symbol → exchangeCoinId` 매핑을 로컬 캐시로 변환한 후 매칭에 사용한다
+
+## 거래소-코인 매핑 캐시
+
+시세 이벤트의 `exchange + symbol`을 로컬 캐시 키인 `exchangeCoinId`로 변환하기 위한 로컬 캐시.
+
+### 자료구조
+
+```
+ConcurrentHashMap<ExchangeSymbolKey, Long>
+    (exchange, symbol) → exchangeCoinId
+```
+
+### 생명주기
+
+| 이벤트 | 동작 |
+|--------|------|
+| 서버 시작 | DB에서 전체 거래소-코인 매핑 로딩 |
+| 코인 상장/상폐 | 캐시 갱신 |
+
+- 거의 변하지 않는 정적 데이터이므로 서버 시작 시 전체 로딩 후 인메모리로 유지한다
+- 매 시세 이벤트마다 조회하므로 네트워크 I/O가 없는 로컬 캐시를 사용한다
 
 # 매칭 로직
 
@@ -113,31 +151,6 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
 |------|----------|
 | 지정가 매수 | 현재가 ≤ 지정가 |
 | 지정가 매도 | 현재가 ≥ 지정가 |
-
-## 매칭 플로우
-
-```
-시세 변경 이벤트 수신 (exchangeCoinId, currentPrice)
-    │
-    ▼
-로컬 캐시에서 exchangeCoinId로 미체결 주문 리스트 조회
-    │
-    ▼
-리스트가 비어있으면 → 종료 (대부분의 경우)
-    │
-    ▼
-각 주문에 대해 체결 조건 판정 (인메모리 BigDecimal 비교)
-    │
-    ├─ 조건 미충족 → skip
-    │
-    └─ 조건 충족 → 체결 처리 (아래 단계)
-         │
-         ▼
-    로컬 캐시에서 제거 (다음 시세 이벤트에서 중복 매칭 방지)
-         │
-         ▼
-    비동기로 체결 처리 실행
-```
 
 ## 체결 처리
 
@@ -173,11 +186,11 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
 트랜잭션 커밋 후 STOMP를 통해 해당 사용자에게 체결 이벤트를 푸시한다.
 
 - STOMP user destination: `/user/queue/events`
-- 메시지: `{eventType: "ORDER_FILLED", walletId, orderId}`
+- 메시지: `{eventType: "ORDER_FILLED", walletId, orderId, coinId, side, quantity, price, fee}`
 - `@TransactionalEventListener(phase = AFTER_COMMIT)`으로 트랜잭션 커밋 후 발행한다
-- 클라이언트는 현재 보고 있는 walletId와 일치할 때만 refetch한다
-  - 포트폴리오 탭: 포트폴리오 API refetch (holdings + 잔고 변동)
-  - 입출금 탭: 잔고 API refetch
+- 클라이언트는 현재 보고 있는 walletId와 일치할 때만 로컬 갱신한다
+  - 포트폴리오 탭: 해당 holding만 로컬 갱신 (매수: qty 증가 + avgBuyPrice 재계산 + 잔고 차감, 매도: qty 감소 + 잔고 증가) → 자산요약 재계산
+  - 입출금 탭: 해당 coinId 잔고만 로컬 갱신 (available/locked 조정)
 
 #### WebSocket 설정 변경
 
@@ -200,18 +213,17 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
 
 주문은 생성한 서버의 로컬 캐시에만 존재하므로, 여러 서버가 같은 주문을 동시에 매칭하는 상황 자체가 발생하지 않는다.
 
-## 서버 재시작 시: DB 수준 방어
+## 취소와의 경합: 낙관적 락
 
-서버 재시작 시 DB에서 전체 미체결 주문을 워밍업하므로, 일시적으로 여러 서버에 같은 주문이 존재할 수 있다. 이때 DB 수준에서 중복 체결을 방어한다.
+주문 취소와 매칭 체결이 동일 주문에 대해 동시에 발생할 수 있다. Order 엔티티의 `@Version`(낙관적 락)으로 방어한다.
 
-```sql
-UPDATE orders SET status = 'FILLED', filled_at = ?
-WHERE order_id = ? AND status = 'PENDING'
-```
+- 취소가 먼저 CANCELLED로 변경하면 version이 증가한다
+- 매칭이 이전 version으로 UPDATE를 시도하면 `OptimisticLockingFailureException` 발생
+- 매칭은 이 예외를 catch하여 캐시 재추가 없이 skip한다 (취소가 이미 처리했으므로)
 
-- `WHERE status = 'PENDING'` 조건으로 이미 체결된 주문은 영향 받지 않는다
-- `affected rows = 0`이면 이미 체결된 것이므로 후속 처리를 skip하고 로컬 캐시에서만 제거한다
-- 정상 상태에서는 이 방어 로직이 작동하지 않으므로 추가 I/O 없음
+## 서버 재시작 시: 낙관적 락으로 방어
+
+서버 재시작 시 DB에서 전체 미체결 주문을 워밍업하므로, 일시적으로 여러 서버에 같은 주문이 존재할 수 있다. 먼저 체결한 서버가 version을 증가시키므로, 나중에 체결을 시도하는 서버는 `OptimisticLockingFailureException`을 받아 skip한다.
 
 ## 동일 서버 내 동시 매칭
 
@@ -225,9 +237,19 @@ WHERE order_id = ? AND status = 'PENDING'
 
 ## 워밍업 시점
 
-`ApplicationReadyEvent` 시점에 DB에서 PENDING 상태 주문을 조회하여 로컬 캐시에 적재한다. RabbitMQ 리스너는 워밍업 완료 후 시세 이벤트를 소비하기 시작한다.
+`ApplicationReadyEvent` 시점에 두 가지 캐시를 초기화한다. RabbitMQ 리스너는 워밍업 완료 후 시세 이벤트를 소비하기 시작한다.
 
-## 워밍업 쿼리
+## 워밍업 순서
+
+1. 서버 시작
+2. 거래소-코인 매핑 캐시 로딩 (DB에서 전체 매핑 조회)
+3. 미체결 주문 캐시 로딩 (DB에서 PENDING 주문 조회)
+4. RabbitMQ 리스너 활성화 → 시세 이벤트 소비 시작
+
+- 매핑 캐시를 먼저 로딩해야 시세 이벤트 수신 시 `exchange + symbol → exchangeCoinId` 변환이 가능하다
+- 워밍업 중 들어온 시세 이벤트는 큐에 쌓여있다가 리스너 활성화 후 소비된다. 워밍업 전에 체결 조건에 도달했던 주문도 다음 시세 이벤트에서 매칭된다
+
+## 미체결 주문 워밍업 쿼리
 
 ```sql
 SELECT order_id, exchange_coin_id, side, price
@@ -238,97 +260,41 @@ WHERE status = 'PENDING'
 - 매칭 판정에 필요한 최소 컬럼만 조회한다
 - 전체 미체결 주문을 한 번에 조회한다 (주문 수가 서버당 수천~수만 수준으로 관리 가능)
 
-## 워밍업과 시세 이벤트 순서
-
-1. 서버 시작
-2. DB에서 미체결 주문 워밍업 → 로컬 캐시 적재
-3. RabbitMQ 리스너 활성화 → 시세 이벤트 소비 시작
-
-워밍업 중 들어온 시세 이벤트는 큐에 쌓여있다가 리스너 활성화 후 소비된다. 워밍업 전에 체결 조건에 도달했던 주문도 다음 시세 이벤트에서 매칭된다.
-
 # 매칭 실패 및 예외 처리
 
-| 상황 | 처리 |
-|------|------|
-| DB에서 주문 조회 실패 (삭제됨) | 로컬 캐시에서 제거, 로그 경고 |
-| 이미 체결된 주문 (affected rows = 0) | 로컬 캐시에서 제거, 후속 처리 skip |
-| 잔고 반영 실패 | 트랜잭션 롤백, 로컬 캐시에 주문 재추가, 다음 시세 이벤트에서 재시도 |
-| RabbitMQ 연결 끊김 | 큐에 메시지 쌓임, 재연결 후 소비. 체결 지연 발생 |
+| 상황 | 재시도 | 처리 |
+|------|--------|------|
+| 매핑 변환 실패 (캐시 미초기화 등) | X | 구조적 문제. 로그 경고 후 종료 |
+| DB에서 주문 조회 실패 (삭제됨) | X | 로컬 캐시에서 제거, 로그 경고 |
+| 낙관적 락 충돌 (취소·다른 서버 매칭) | X | 캐시 재추가 없이 skip. 다른 트랜잭션이 이미 처리 |
+| 체결 처리 DB 실패 (커넥션, 데드락) | O (최대 2회) | 50ms → 100ms backoff 후 재시도 |
+| 재시도 소진 | X | 트랜잭션 롤백, 로컬 캐시에 주문 재추가, DB에 실패 이력 기록, 로그 경고 |
+| RabbitMQ 연결 끊김 | - | 큐에 메시지 쌓임, 재연결 후 소비. 체결 지연 발생 |
 
-# 헥사고날 아키텍처 매핑
+## 체결 실패 이력
 
-## 도메인 변경
+재시도가 소진된 체결은 DB에 실패 이력을 기록한다. 가격이 다시 체결 조건에 도달하면 자연 재시도되지만, 가격이 돌아오지 않으면 체결 기회를 영구히 놓칠 수 있다.
 
-### Order 도메인 모델
+### 기록 항목
 
-기존 `Order`에 체결 관련 메서드를 추가한다.
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| orderId | Long | 체결 실패한 주문 ID |
+| attemptedPrice | BigDecimal | 체결을 시도한 시세 |
+| failedAt | LocalDateTime | 실패 시각 |
+| reason | String | 실패 사유 (예: DB 커넥션 타임아웃) |
+| resolved | boolean | 이후 체결 성공 여부 (기본값 false) |
 
-| 메서드 | 설명 |
-|--------|------|
-| `fill(LocalDateTime now)` | PENDING → FILLED 전이, filledAt 설정 |
-| `isMatchedAt(BigDecimal currentPrice)` | 체결 조건 판정 (매수: 현재가 ≤ 지정가, 매도: 현재가 ≥ 지정가) |
-| `isPending()` | 상태가 PENDING인지 판별 |
+### 보상 스케줄러
 
-### PendingOrder (도메인 VO)
+주기적으로(1분 간격) 미해결(`resolved = false`) 실패 이력을 조회하여 체결을 재시도한다.
 
-매칭 판정에 필요한 최소 정보를 담는 불변 VO. 로컬 캐시 항목으로 사용된다.
+- 주문이 이미 FILLED/CANCELLED이면 `resolved = true`로 갱신하고 skip한다 (캐시 재추가 후 자연 재시도로 이미 체결된 경우)
+- 주문이 PENDING이면 `fillOrder` 호출하여 체결 처리한다 (체결 조건은 실패 이력의 `attemptedPrice`로 이미 검증됨)
+- 체결 성공 시 `resolved = true`로 갱신한다
+- 보상 스케줄러는 정상 흐름의 백업이다. 대부분의 체결은 다음 시세 이벤트에서 자연 재시도로 처리된다
 
-```java
-public record PendingOrder(
-    Long orderId,
-    Long exchangeCoinId,
-    Side side,
-    BigDecimal price
-) {
-    public boolean isMatchedAt(BigDecimal currentPrice) {
-        return side == Side.BUY
-            ? currentPrice.compareTo(price) <= 0
-            : currentPrice.compareTo(price) >= 0;
-    }
-}
-```
-
-### PendingOrders (일급 컬렉션)
-
-`exchangeCoinId`별 미체결 주문 리스트를 캡슐화한다.
-
-```java
-public class PendingOrders {
-    private final CopyOnWriteArrayList<PendingOrder> orders;
-
-    public List<PendingOrder> findMatchedOrders(BigDecimal currentPrice) { ... }
-    public void add(PendingOrder order) { ... }
-    public void remove(Long orderId) { ... }
-    public boolean isEmpty() { ... }
-}
-```
-
-## 포트
-
-### Input Port (UseCase)
-
-| UseCase | 메서드 | 호출 주체 |
-|---------|-------|----------|
-| `MatchPendingOrdersUseCase` | `matchOrders(Long exchangeCoinId, BigDecimal currentPrice)` | 시세 이벤트 리스너 (Adapter In) |
-
-### Output Port
-
-| Port | 메서드 | 설명 |
-|------|-------|------|
-| `OrderCommandPort` (기존) | `findById(Long)` | 체결 처리 시 주문 조회 |
-| `OrderCommandPort` (기존) | `save(Order)` | 체결 후 주문 저장 |
-| `OrderQueryPort` (신규) | `findAllPending()` | 워밍업 시 PENDING 주문 조회 |
-
-- `findAllPending()`은 기존 `OrderCommandPort`에 추가하거나, 읽기 전용이므로 `OrderQueryPort`로 분리한다
-- 워밍업용 조회는 `PendingOrder` VO를 반환한다 (매칭에 필요한 최소 컬럼만)
-
-### Output Port (신규)
-
-| Port | 메서드 | 설명 |
-|------|-------|------|
-| `OrderFilledEventPort` | `publish(Long userId, Long walletId, Long orderId)` | 체결 이벤트를 클라이언트에 발행 |
-
-### 기존 크로스 컨텍스트 의존 (재사용)
+# 크로스 컨텍스트 의존
 
 | UseCase | 용도 |
 |---------|------|
@@ -336,51 +302,6 @@ public class PendingOrders {
 | `FindExchangeCoinMappingUseCase` | exchangeCoinId → coinId 매핑 (Holding 갱신에 필요) |
 | `FindExchangeDetailUseCase` | baseCurrencyCoinId 조회 (잔고 반영 대상 코인 식별) |
 | `GetWalletOwnerIdUseCase` | walletId → userId 조회 (STOMP user destination 라우팅에 필요) |
-
-## 어댑터
-
-### Adapter In
-
-| 어댑터 | 역할 |
-|--------|------|
-| `TickerEventListener` | RabbitMQ Fanout 큐에서 시세 변경 이벤트를 수신하여 `MatchPendingOrdersUseCase`를 호출 |
-
-### Adapter Out
-
-| 어댑터 | 역할 |
-|--------|------|
-| `OrderJpaPersistenceAdapter` (기존) | 주문 CRUD |
-| `PendingOrderLocalCacheAdapter` (신규) | 로컬 캐시 관리 (ConcurrentHashMap). `PendingOrderCachePort`를 구현 |
-| `OrderFilledStompAdapter` (신규) | `OrderFilledEventPort` 구현. `SimpMessagingTemplate.convertAndSendToUser()`로 STOMP 이벤트 발행 |
-
-## 서비스
-
-### MatchPendingOrdersService
-
-`MatchPendingOrdersUseCase`를 구현한다. 순수 오케스트레이션만 수행한다.
-
-```
-matchOrders(exchangeCoinId, currentPrice)
-    │
-    ├─ PendingOrderCachePort에서 매칭 대상 조회
-    │
-    ├─ 각 매칭 주문에 대해:
-    │   ├─ 캐시에서 즉시 제거
-    │   └─ fillOrder(orderId, currentPrice) 호출
-    │
-    └─ 종료
-
-fillOrder(orderId, currentPrice)  @Transactional
-    │
-    ├─ OrderCommandPort에서 주문 조회
-    ├─ order.fill(now) — 상태 전이
-    ├─ ManageWalletBalanceUseCase로 잔고 반영
-    ├─ HoldingCommandPort로 Holding 갱신
-    ├─ OrderCommandPort로 주문 저장
-    └─ [AFTER_COMMIT] 클라이언트에 ORDER_FILLED 이벤트 발행
-    │
-    (실패 시 캐시에 다시 추가)
-```
 
 # 시퀀스 다이어그램
 
@@ -390,6 +311,7 @@ sequenceDiagram
     participant RabbitMQ
     participant Listener as TickerEventListener
     participant Service as MatchPendingOrdersService
+    participant MappingPort as ExchangeCoinMappingCachePort
     participant Cache as PendingOrderCachePort
     participant OrderPort as OrderCommandPort
     participant Balance as ManageWalletBalanceUseCase
@@ -398,10 +320,20 @@ sequenceDiagram
     participant STOMP as SimpMessagingTemplate
 
     Note over Ticker,RabbitMQ: 시세 변경 이벤트 발행
-    Ticker->>RabbitMQ: publish(exchangeCoinId, currentPrice)
+    Ticker->>RabbitMQ: publish(exchange, symbol, currentPrice)
     RabbitMQ->>Listener: consume (Fanout → 서버별 전용 큐)
 
-    Listener->>Service: matchOrders(exchangeCoinId, currentPrice)
+    Listener->>Service: matchOrders(exchange, symbol, currentPrice)
+
+    rect rgb(60, 60, 60)
+        Note over Service,MappingPort: STEP 00 exchange + symbol → exchangeCoinId 변환
+    end
+    Service->>MappingPort: resolve(exchange, symbol)
+    MappingPort-->>Service: exchangeCoinId
+
+    alt 매핑 없음
+        Note over Service: 종료 (알 수 없는 코인)
+    end
 
     rect rgb(60, 60, 60)
         Note over Service,Cache: STEP 01 매칭 대상 조회 (인메모리)
@@ -417,7 +349,7 @@ sequenceDiagram
         rect rgb(60, 60, 60)
             Note over Service,Cache: STEP 02 캐시에서 즉시 제거
         end
-        Service->>Cache: remove(orderId)
+        Service->>Cache: remove(exchangeCoinId, orderId)
 
         rect rgb(60, 60, 60)
             Note over Service,MySQL: STEP 03 체결 처리 (@Transactional)
@@ -446,28 +378,3 @@ sequenceDiagram
     Service-->>Listener: void
 ```
 
-# 주문 생성 시 캐시 적재 연동
-
-기존 `PlaceOrderService`에서 지정가 주문 생성 후 로컬 캐시에 적재하는 단계를 추가한다.
-
-```
-기존 STEP 08 (주문 저장) 이후:
-
-    STEP 10 (신규) 로컬 캐시 적재 (지정가만)
-    if order.status == PENDING:
-        PendingOrderCachePort.add(PendingOrder.from(order))
-```
-
-- 트랜잭션 커밋 후 캐시에 적재한다 (DB 저장 실패 시 캐시에 유령 주문이 남는 것을 방지)
-- `@TransactionalEventListener(phase = AFTER_COMMIT)`을 활용한다
-
-# 주문 취소 시 캐시 제거 연동
-
-기존 주문 취소 로직에서 로컬 캐시 제거를 추가한다.
-
-```
-주문 취소 처리 후:
-    PendingOrderCachePort.remove(orderId)
-```
-
-- 캐시에 없는 주문을 제거하려 해도 예외 없이 무시한다 (다른 서버에서 생성된 주문일 수 있음)
