@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { MarketOverviewCards } from "@/components/market/MarketOverviewCards";
@@ -12,14 +12,13 @@ import { OrderPanel } from "@/components/market/OrderPanel";
 import { EmergencyFundingCard } from "@/components/round/EmergencyFundingCard";
 import { useRound } from "@/contexts/RoundContext";
 import { cexExchanges, dexExchanges } from "@/mocks/coins";
-// TODO: Phase 6-1에서 EXCHANGES 상수 + getExchangeCoins() API + useLivePrices()로 전환
-import { getBackendExchangeId, resolveOrderTargetIds } from "@/lib/api/id-mapping";
+import { getBackendExchangeId, resolveOrderTargetIds, type OrderTargetIds } from "@/lib/api/id-mapping";
 import type { MarketType } from "@/components/market/MarketTypeTabs";
 import type { FilterType } from "@/components/market/FilterChips";
 
 export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeRound, chargeEmergencyFunding } = useRound();
+  const { activeRound, chargeEmergencyFunding, getWalletId } = useRound();
 
   const marketType = (searchParams.get("type") === "dex" ? "dex" : "cex") as MarketType;
   const isCex = marketType === "cex";
@@ -67,9 +66,18 @@ export function MarketPage() {
     const fromSelection = exchange.coins.find((coin) => coin.symbol === selectedSymbol);
     return fromSelection ?? filteredCoins[0] ?? exchange.coins[0];
   }, [exchange.coins, filteredCoins, selectedSymbol]);
-  const orderTargetIds = selectedCoin
-    ? resolveOrderTargetIds(selectedExchange, selectedCoin.symbol)
-    : null;
+  const [orderTargetIds, setOrderTargetIds] = useState<OrderTargetIds | null>(null);
+  useEffect(() => {
+    if (!selectedCoin) {
+      setOrderTargetIds(null);
+      return;
+    }
+    let cancelled = false;
+    void resolveOrderTargetIds(selectedExchange, selectedCoin.symbol, getWalletId).then((ids) => {
+      if (!cancelled) setOrderTargetIds(ids);
+    });
+    return () => { cancelled = true; };
+  }, [selectedExchange, selectedCoin, getWalletId]);
 
   const handleMarketTypeChange = (type: MarketType) => {
     const newExchanges = type === "cex" ? cexExchanges : dexExchanges;
