@@ -88,14 +88,14 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
     ▼
 [Fanout Exchange: ticker.exchange]
     │
-    ├─→ Queue: ticker.matching.server-1  →  Server 1
-    ├─→ Queue: ticker.matching.server-2  →  Server 2
-    └─→ Queue: ticker.matching.server-3  →  Server 3
+    ├─→ Queue: ticker.trading.server-1  →  Server 1
+    ├─→ Queue: ticker.trading.server-2  →  Server 2
+    └─→ Queue: ticker.trading.server-3  →  Server 3
 ```
 
 - **Fanout Exchange**: 모든 서버가 동일한 시세 이벤트를 수신해야 하므로 Fanout 사용
 - **서버별 전용 큐**: 각 서버가 자기만의 큐를 가지며, 서버가 내려가면 큐에 메시지가 쌓이고 서버 복구 시 처리
-- 기존 Redis Pub/Sub 기반 클라이언트 스트리밍 채널과는 별도의 경로
+- marketdata용 `ticker.marketdata.{uuid}` 큐도 동일 fanout exchange에 바인딩되어 독립적으로 시세를 소비한다
 
 ### 메시지 신뢰성
 
