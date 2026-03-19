@@ -162,14 +162,14 @@ export function WalletPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero section */}
-      <section className="bg-gradient-to-r from-primary/8 via-chart-2/6 to-primary/4 pb-8 pt-8">
+      {/* Page header */}
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">입출금</h1>
-              <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-                자산 관리 &middot; 입금/출금 내역 확인
+              <h1 className="font-serif text-3xl font-bold tracking-tight">입출금</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                자산 관리 · 입금/출금 내역 확인
               </p>
             </div>
             <ExchangeTabs
