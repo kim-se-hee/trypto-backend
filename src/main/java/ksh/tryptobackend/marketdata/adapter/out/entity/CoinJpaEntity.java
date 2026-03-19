@@ -2,22 +2,23 @@ package ksh.tryptobackend.marketdata.adapter.out.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import ksh.tryptobackend.marketdata.domain.model.Coin;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Immutable;
 
 @Entity
 @Table(name = "coin")
-@Immutable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CoinJpaEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "coin_id")
     private Long id;
 
@@ -26,6 +27,11 @@ public class CoinJpaEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    public CoinJpaEntity(String symbol, String name) {
+        this.symbol = symbol;
+        this.name = name;
+    }
 
     public Coin toDomain() {
         return new Coin(id, symbol, name);
