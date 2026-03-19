@@ -1,5 +1,6 @@
 package ksh.tryptobackend.common.seed;
 
+import ksh.tryptobackend.user.adapter.out.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DataSeeder {
 
+    private final UserJpaRepository userRepository;
     private final MarketDataIdResolver marketDataIdResolver;
     private final UserDataSeeder userDataSeeder;
     private final InvestmentRoundDataSeeder investmentRoundDataSeeder;
@@ -27,6 +29,11 @@ public class DataSeeder {
     @Order(2)
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+        if (userRepository.count() > 0) {
+            log.info("===== DataSeeder 스킵: 이미 데이터가 존재합니다 =====");
+            return;
+        }
+
         log.info("===== DataSeeder 시작 =====");
 
         SeedContext ctx = new SeedContext();
