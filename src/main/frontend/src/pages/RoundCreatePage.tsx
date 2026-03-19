@@ -64,10 +64,10 @@ export function RoundCreatePage() {
     <div className="min-h-dvh bg-background">
       <RoundCreateHeader />
 
-      <section className="bg-gradient-to-r from-primary/8 via-chart-2/6 to-primary/4 pb-8 pt-8">
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-2xl px-4">
-          <h1 className="text-3xl font-extrabold tracking-tight">투자 라운드 시작</h1>
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+          <h1 className="font-display text-3xl tracking-tight">투자 라운드 시작</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             시드머니와 투자 원칙을 설정하고 모의투자를 시작하세요.
           </p>
         </div>
@@ -95,7 +95,7 @@ export function RoundCreatePage() {
             <button
               disabled={!canSubmit || isSubmitting}
               onClick={handleSubmit}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-[#9A6AFF] text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 disabled:pointer-events-none disabled:opacity-40"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-white transition-all duration-150 hover:bg-primary/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
             >
               <Rocket className="h-4 w-4" />
               {isSubmitting ? "생성 중..." : "라운드 시작하기"}

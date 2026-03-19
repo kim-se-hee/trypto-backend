@@ -85,14 +85,14 @@ export function RegretPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-r from-primary/8 via-chart-3/6 to-primary/4 pb-8 pt-8">
+      {/* Page header */}
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex items-center gap-2.5">
-            <BarChart3 className="h-7 w-7 text-primary" />
-            <h1 className="text-3xl font-extrabold tracking-tight">투자 복기</h1>
+            <BarChart3 className="h-6 w-6 text-primary" />
+            <h1 className="font-display text-3xl tracking-tight">투자 복기</h1>
           </div>
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             규칙만 지켰으면 얼마를 벌었을까?
           </p>
         </div>

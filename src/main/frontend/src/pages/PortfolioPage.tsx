@@ -83,14 +83,14 @@ export function PortfolioPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero section */}
-      <section className="bg-gradient-to-r from-primary/8 via-chart-2/6 to-primary/4 pb-8 pt-8">
+      {/* Page header */}
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">투자내역</h1>
-              <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-                {portfolio?.exchangeName ?? selectedExchange} 기준 &middot; {portfolio?.baseCurrency ?? ""} 마켓
+              <h1 className="font-display text-3xl tracking-tight">투자내역</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {portfolio?.exchangeName ?? selectedExchange} 기준 · {portfolio?.baseCurrency ?? ""} 마켓
               </p>
             </div>
             <ExchangeTabs

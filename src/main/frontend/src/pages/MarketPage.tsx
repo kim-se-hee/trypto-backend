@@ -112,16 +112,16 @@ export function MarketPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero section */}
-      <section className="bg-gradient-to-r from-primary/8 via-chart-2/6 to-primary/4 pb-8 pt-8">
+      {/* Page header */}
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">
+              <h1 className="font-display text-3xl tracking-tight">
                 {isCex ? "코인 시세" : "DEX 시세"}
               </h1>
-              <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-                {exchange.name} 기준 &middot; {exchange.baseCurrency} 마켓
+              <p className="mt-2 text-sm text-muted-foreground">
+                {exchange.name} 기준 · {exchange.baseCurrency} 마켓
               </p>
             </div>
             <MarketTypeTabs selected={marketType} onSelect={handleMarketTypeChange} />
@@ -129,12 +129,14 @@ export function MarketPage() {
         </div>
       </section>
 
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-4 py-8">
         {/* Market overview cards */}
-        <MarketOverviewCards coins={coins} baseCurrency={exchange.baseCurrency} />
+        <div className="animate-enter-delay-1">
+          <MarketOverviewCards coins={coins} baseCurrency={exchange.baseCurrency} />
+        </div>
 
-        {/* Controls card */}
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
+        {/* Controls */}
+        <div className="animate-enter-delay-2 mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
           <ExchangeTabs
             exchanges={exchangeTabItems}
             selected={selectedExchange}
@@ -147,8 +149,8 @@ export function MarketPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-4">
+        <div className="animate-enter-delay-3 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-5">
             {selectedCoin && (
               <CandleChartPanel
                 exchangeKey={selectedExchange}
@@ -167,7 +169,7 @@ export function MarketPage() {
           </div>
 
           {/* Side panel */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {activeRound && backendExchangeId !== null && (
               <EmergencyFundingCard
                 round={activeRound}
@@ -188,7 +190,7 @@ export function MarketPage() {
         </div>
 
         {/* Footer info */}
-        <p className="mt-3 text-[11px] text-muted-foreground/60">
+        <p className="mt-4 text-[11px] text-muted-foreground/50">
           * 시세 데이터는 모의투자용이며 실제 시세와 다를 수 있습니다.
         </p>
       </main>

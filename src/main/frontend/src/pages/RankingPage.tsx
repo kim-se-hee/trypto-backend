@@ -169,20 +169,20 @@ export function RankingPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <section className="bg-gradient-to-r from-primary/8 via-chart-4/6 to-primary/4 pb-8 pt-8">
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="mb-1 flex items-center gap-2.5">
-                <Trophy className="h-7 w-7 text-primary" />
-                <h1 className="text-3xl font-extrabold tracking-tight">랭킹</h1>
+                <Trophy className="h-6 w-6 text-primary" />
+                <h1 className="font-display text-3xl tracking-tight">랭킹</h1>
               </div>
-              <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {periodLabel} 수익률 기준 순위
               </p>
             </div>
 
-            <div className="flex gap-1.5 rounded-xl bg-white/60 p-1 backdrop-blur-sm">
+            <div className="flex gap-1.5 rounded-lg border border-border bg-card p-1">
               {PERIOD_TABS.map((tab) => (
                 <button
                   key={tab.key}

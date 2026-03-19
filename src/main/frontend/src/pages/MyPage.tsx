@@ -104,11 +104,11 @@ export function MyPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero */}
-      <section className="bg-gradient-to-r from-primary/8 via-chart-2/6 to-primary/4 pb-8 pt-8">
+      {/* Page header */}
+      <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <h1 className="text-3xl font-extrabold tracking-tight">마이페이지</h1>
-          <p className="mt-1.5 text-sm font-medium text-muted-foreground">
+          <h1 className="font-display text-3xl tracking-tight">마이페이지</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             프로필 관리 및 투자 라운드 현황
           </p>
         </div>
