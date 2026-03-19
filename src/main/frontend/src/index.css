@@ -46,7 +46,6 @@
     --color-warning: var(--warning);
     --font-sans: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
     --font-display: 'Noto Sans KR', 'Pretendard Variable', system-ui, sans-serif;
-    --font-logo: 'Playfair Display', Georgia, serif;
     --shadow-card: 0 0 0 1px var(--border);
     --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border);
     --shadow-card-active: 0 4px 12px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border);
@@ -108,11 +107,6 @@
   font-weight: 800;
 }
 
-/* Logo — 영문 세리프 (로고 전용) */
-.font-logo {
-  font-family: var(--font-logo);
-  font-weight: 700;
-}
 
 /* ── Page enter animation ── */
 @keyframes fade-in-up {
