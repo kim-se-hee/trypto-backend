@@ -10,6 +10,7 @@ import ksh.tryptobackend.wallet.domain.model.WalletBalance;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,21 +40,25 @@ public class WalletCommandAdapter implements WalletCommandPort {
     }
 
     @Override
+    @Transactional
     public void deductBalance(Long walletId, Long coinId, BigDecimal amount) {
         executeBalanceOperation(walletId, coinId, balance -> balance.deductAvailable(amount));
     }
 
     @Override
+    @Transactional
     public void addBalance(Long walletId, Long coinId, BigDecimal amount) {
         executeBalanceOperation(walletId, coinId, balance -> balance.addAvailable(amount));
     }
 
     @Override
+    @Transactional
     public void lockBalance(Long walletId, Long coinId, BigDecimal amount) {
         executeBalanceOperation(walletId, coinId, balance -> balance.lock(amount));
     }
 
     @Override
+    @Transactional
     public void unlockBalance(Long walletId, Long coinId, BigDecimal amount) {
         executeBalanceOperation(walletId, coinId, balance -> balance.unlock(amount));
     }
