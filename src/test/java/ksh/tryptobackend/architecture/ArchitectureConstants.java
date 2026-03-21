@@ -66,6 +66,18 @@ public final class ArchitectureConstants {
             .toArray(String[]::new);
     }
 
+    static String[] merge(String[]... arrays) {
+        int total = 0;
+        for (String[] arr : arrays) total += arr.length;
+        String[] result = new String[total];
+        int pos = 0;
+        for (String[] arr : arrays) {
+            System.arraycopy(arr, 0, result, pos, arr.length);
+            pos += arr.length;
+        }
+        return result;
+    }
+
     static String[] otherContextPortInPackages(String context) {
         return Arrays.stream(BOUNDED_CONTEXTS)
             .filter(ctx -> !ctx.equals(context))

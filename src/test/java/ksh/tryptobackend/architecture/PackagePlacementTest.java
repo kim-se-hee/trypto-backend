@@ -31,8 +31,9 @@ class PackagePlacementTest {
             .that().haveSimpleNameEndingWith("Service")
             .and().resideInAnyPackage(allContextPackages(".."))
             .and().areNotInterfaces()
-            .should().resideInAnyPackage(allContextPackages(SERVICE))
-            .as("Service implementations should reside in application.service")
+            .should().resideInAnyPackage(
+                merge(allContextPackages(SERVICE), allContextPackages(DOMAIN_SERVICE)))
+            .as("Service implementations should reside in application.service or domain.service")
             .check(classes);
     }
 

@@ -96,15 +96,4 @@ class HexagonalLayerDependencyTest {
         ).check(classes);
     }
 
-    private static String[] merge(String[]... arrays) {
-        int total = 0;
-        for (String[] arr : arrays) total += arr.length;
-        String[] result = new String[total];
-        int pos = 0;
-        for (String[] arr : arrays) {
-            System.arraycopy(arr, 0, result, pos, arr.length);
-            pos += arr.length;
-        }
-        return result;
-    }
 }
