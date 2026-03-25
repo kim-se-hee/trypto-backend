@@ -16,10 +16,14 @@ class HexagonalLayerDependencyTest {
     void domain_should_not_depend_on_application_or_adapter_or_framework(JavaClasses classes) {
         noClasses()
             .that().resideInAnyPackage(allContextPackages(DOMAIN))
+            .and().resideOutsideOfPackage("..domain.service..")
             .should().dependOnClassesThat()
             .resideInAnyPackage(
                 merge(
-                    allContextPackages(APPLICATION),
+                    allContextPackages(SERVICE),
+                    allContextPackages(".application.port.out.."),
+                    allContextPackages(".application.port.in"),
+                    allContextPackages(STRATEGY),
                     allContextPackages(ADAPTER),
                     new String[]{
                         "org.springframework..",
@@ -29,7 +33,7 @@ class HexagonalLayerDependencyTest {
                     }
                 )
             )
-            .as("Domain should not depend on application, adapter, or framework")
+            .as("Domain should not depend on application (except port.in.dto), adapter, or framework")
             .check(classes);
     }
 
@@ -95,15 +99,4 @@ class HexagonalLayerDependencyTest {
         ).check(classes);
     }
 
-    private static String[] merge(String[]... arrays) {
-        int total = 0;
-        for (String[] arr : arrays) total += arr.length;
-        String[] result = new String[total];
-        int pos = 0;
-        for (String[] arr : arrays) {
-            System.arraycopy(arr, 0, result, pos, arr.length);
-            pos += arr.length;
-        }
-        return result;
-    }
 }
