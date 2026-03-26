@@ -1,5 +1,9 @@
 package ksh.tryptobackend.trading.application.service;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import ksh.tryptobackend.marketdata.application.port.in.ResolveExchangeCoinMappingUseCase;
 import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.MatchPendingOrdersUseCase;
@@ -8,7 +12,6 @@ import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPo
 import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheQueryPort;
 import ksh.tryptobackend.trading.domain.model.OrderFillFailure;
 import ksh.tryptobackend.trading.domain.vo.PendingOrder;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -20,7 +23,6 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
 
     private static final int MAX_RETRY_COUNT = 2;
@@ -36,8 +38,44 @@ public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
 
     private final Clock clock;
 
+    private final Timer e2eTimer;
+    private final DistributionSummary matchCountSummary;
+    private final Counter optimisticLockCounter;
+    private final Counter retryExhaustedCounter;
+
+    public MatchPendingOrdersService(PendingOrderCacheCommandPort pendingOrderCacheCommandPort,
+                                     PendingOrderCacheQueryPort pendingOrderCacheQueryPort,
+                                     OrderFillFailureCommandPort orderFillFailureCommandPort,
+                                     FillPendingOrderUseCase fillPendingOrderUseCase,
+                                     ResolveExchangeCoinMappingUseCase resolveExchangeCoinMappingUseCase,
+                                     Clock clock,
+                                     MeterRegistry registry) {
+        this.pendingOrderCacheCommandPort = pendingOrderCacheCommandPort;
+        this.pendingOrderCacheQueryPort = pendingOrderCacheQueryPort;
+        this.orderFillFailureCommandPort = orderFillFailureCommandPort;
+        this.fillPendingOrderUseCase = fillPendingOrderUseCase;
+        this.resolveExchangeCoinMappingUseCase = resolveExchangeCoinMappingUseCase;
+        this.clock = clock;
+
+        this.e2eTimer = Timer.builder("pending.order.e2e")
+            .description("미체결 주문 매칭 end-to-end 처리 시간")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(registry);
+        this.matchCountSummary = DistributionSummary.builder("pending.order.match.count")
+            .description("이벤트당 매칭 건수")
+            .register(registry);
+        this.optimisticLockCounter = Counter.builder("pending.order.fill.optimistic_lock")
+            .description("낙관적 락 충돌 횟수")
+            .register(registry);
+        this.retryExhaustedCounter = Counter.builder("pending.order.fill.retry_exhausted")
+            .description("재시도 소진 횟수")
+            .register(registry);
+    }
+
     @Override
     public void matchOrders(String exchange, String symbol, BigDecimal currentPrice) {
+        Timer.Sample sample = Timer.start();
+
         Long exchangeCoinId = resolveExchangeCoinId(exchange, symbol);
         if (exchangeCoinId == null) {
             return;
@@ -45,6 +83,7 @@ public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
 
         List<PendingOrder> matchedOrders = pendingOrderCacheQueryPort
             .findMatchedOrders(exchangeCoinId, currentPrice);
+        matchCountSummary.record(matchedOrders.size());
         if (matchedOrders.isEmpty()) {
             return;
         }
@@ -53,6 +92,8 @@ public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
             pendingOrderCacheCommandPort.remove(exchangeCoinId, pendingOrder.orderId());
             processFillWithRetry(pendingOrder, currentPrice);
         }
+
+        sample.stop(e2eTimer);
     }
 
     private Long resolveExchangeCoinId(String exchange, String symbol) {
@@ -69,6 +110,7 @@ public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
                 fillPendingOrderUseCase.fillOrder(pendingOrder.orderId(), currentPrice);
                 return;
             } catch (OptimisticLockingFailureException e) {
+                optimisticLockCounter.increment();
                 log.info("낙관적 락 충돌 (취소/다른 서버 매칭): orderId={}", pendingOrder.orderId());
                 return;
             } catch (Exception e) {
@@ -91,6 +133,7 @@ public class MatchPendingOrdersService implements MatchPendingOrdersUseCase {
     }
 
     private void handleFillFailure(PendingOrder pendingOrder, BigDecimal currentPrice, Exception e) {
+        retryExhaustedCounter.increment();
         log.error("체결 처리 실패 (재시도 소진): orderId={}", pendingOrder.orderId(), e);
         pendingOrderCacheCommandPort.add(pendingOrder);
         recordFillFailure(pendingOrder, currentPrice, e);

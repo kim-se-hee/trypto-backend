@@ -1,5 +1,7 @@
 package ksh.tryptobackend.trading.application.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
@@ -13,7 +15,6 @@ import ksh.tryptobackend.trading.domain.vo.OrderFilledEvent;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.GetWalletOwnerIdUseCase;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,6 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class FillPendingOrderService implements FillPendingOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
@@ -39,9 +39,44 @@ public class FillPendingOrderService implements FillPendingOrderUseCase {
     private final OrderFilledEventPort orderFilledEventPort;
     private final Clock clock;
 
+    private final Timer fillTimer;
+
+    public FillPendingOrderService(OrderCommandPort orderCommandPort,
+                                   HoldingCommandPort holdingCommandPort,
+                                   FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase,
+                                   FindExchangeDetailUseCase findExchangeDetailUseCase,
+                                   ManageWalletBalanceUseCase manageWalletBalanceUseCase,
+                                   GetWalletOwnerIdUseCase getWalletOwnerIdUseCase,
+                                   OrderFilledEventPort orderFilledEventPort,
+                                   Clock clock,
+                                   MeterRegistry registry) {
+        this.orderCommandPort = orderCommandPort;
+        this.holdingCommandPort = holdingCommandPort;
+        this.findExchangeCoinMappingUseCase = findExchangeCoinMappingUseCase;
+        this.findExchangeDetailUseCase = findExchangeDetailUseCase;
+        this.manageWalletBalanceUseCase = manageWalletBalanceUseCase;
+        this.getWalletOwnerIdUseCase = getWalletOwnerIdUseCase;
+        this.orderFilledEventPort = orderFilledEventPort;
+        this.clock = clock;
+
+        this.fillTimer = Timer.builder("pending.order.fill")
+            .description("미체결 주문 체결 처리 시간 (단건)")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(registry);
+    }
+
     @Override
     @Transactional
     public void fillOrder(Long orderId, BigDecimal currentPrice) {
+        Timer.Sample sample = Timer.start();
+        try {
+            doFillOrder(orderId, currentPrice);
+        } finally {
+            sample.stop(fillTimer);
+        }
+    }
+
+    private void doFillOrder(Long orderId, BigDecimal currentPrice) {
         Order order = orderCommandPort.findById(orderId).orElse(null);
         if (order == null) {
             log.warn("주문 조회 실패 (삭제됨): orderId={}", orderId);
