@@ -7,6 +7,7 @@ import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPo
 import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheQueryPort;
 import ksh.tryptobackend.trading.domain.vo.PendingOrder;
 import ksh.tryptobackend.trading.domain.vo.Side;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +56,8 @@ class MatchPendingOrdersServiceTest {
         sut = new MatchPendingOrdersService(
             pendingOrderCacheCommandPort, pendingOrderCacheQueryPort,
             orderFillFailureCommandPort, fillPendingOrderUseCase,
-            resolveExchangeCoinMappingUseCase, clock
+            resolveExchangeCoinMappingUseCase, clock,
+            new SimpleMeterRegistry()
         );
     }
 
