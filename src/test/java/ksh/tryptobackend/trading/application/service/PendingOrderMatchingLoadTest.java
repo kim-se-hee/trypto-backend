@@ -1,14 +1,23 @@
 package ksh.tryptobackend.trading.application.service;
 
-import ksh.tryptobackend.acceptance.MockAdapterConfiguration;
 import ksh.tryptobackend.acceptance.TestContainerConfiguration;
-import ksh.tryptobackend.acceptance.mock.MockHoldingAdapter;
-import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
-import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
-import ksh.tryptobackend.marketdata.application.port.in.ResolveExchangeCoinMappingUseCase;
-import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
-import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
+import ksh.tryptobackend.investmentround.adapter.out.entity.InvestmentRoundJpaEntity;
+import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRoundJpaRepository;
+import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
+import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
+import ksh.tryptobackend.marketdata.adapter.out.entity.CoinJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeCoinJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.repository.CoinJpaRepository;
+import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeCoinJpaRepository;
+import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
+import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinMappingCacheCommandPort;
+import ksh.tryptobackend.marketdata.domain.model.ExchangeMarketType;
+import ksh.tryptobackend.marketdata.domain.vo.ExchangeCoinMapping;
+import ksh.tryptobackend.marketdata.domain.vo.ExchangeSymbolKey;
+import ksh.tryptobackend.trading.adapter.out.entity.HoldingJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.repository.HoldingJpaRepository;
 import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
 import ksh.tryptobackend.trading.application.port.in.MatchPendingOrdersUseCase;
 import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
@@ -19,9 +28,14 @@ import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.PendingOrder;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
 import ksh.tryptobackend.trading.domain.vo.Side;
+import ksh.tryptobackend.user.adapter.out.entity.UserJpaEntity;
+import ksh.tryptobackend.user.adapter.out.repository.UserJpaRepository;
+import ksh.tryptobackend.user.domain.model.User;
 import ksh.tryptobackend.wallet.adapter.out.entity.WalletBalanceJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.entity.WalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
-import ksh.tryptobackend.wallet.application.port.in.GetWalletOwnerIdUseCase;
+import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
+import ksh.tryptobackend.wallet.domain.model.Wallet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.TestInstance;
@@ -31,80 +45,62 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
+import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Import({TestContainerConfiguration.class, MockAdapterConfiguration.class})
+@Import({TestContainerConfiguration.class, LoadTestMockConfiguration.class})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayName("미체결 주문 매칭 부하 테스트")
 class PendingOrderMatchingLoadTest {
 
     private static final String EXCHANGE = "UPBIT";
     private static final String SYMBOL = "BTC";
-    private static final Long EXCHANGE_COIN_ID = 1L;
-    private static final Long EXCHANGE_ID = 1L;
-    private static final Long COIN_ID = 1L;
-    private static final Long BASE_CURRENCY_COIN_ID = 2L;
     private static final BigDecimal FILL_PRICE = new BigDecimal("50000000");
     private static final BigDecimal FEE_RATE = new BigDecimal("0.0005");
     private static final BigDecimal ORDER_QUANTITY = new BigDecimal("0.001");
     private static final int MAX_WALLETS = 150;
 
     private static final int WARMUP_ITERATIONS = 3;
-    private static final int MEASURE_ITERATIONS = 10;
-    private static final int CONSUMER_THREADS = 5;
+    private static final int MEASURE_ITERATIONS = 100;
+    private static final int CONSUMER_THREADS = 1;
     private static final double EVENTS_PER_SECOND = 241.0;
 
-    @Autowired
-    private MatchPendingOrdersUseCase matchPendingOrdersUseCase;
+    @Autowired private MatchPendingOrdersUseCase matchPendingOrdersUseCase;
+    @Autowired private PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
+    @Autowired private ExchangeCoinMappingCacheCommandPort exchangeCoinMappingCacheCommandPort;
 
-    @Autowired
-    private PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
+    @Autowired private CoinJpaRepository coinJpaRepository;
+    @Autowired private ExchangeJpaRepository exchangeJpaRepository;
+    @Autowired private ExchangeCoinJpaRepository exchangeCoinJpaRepository;
+    @Autowired private UserJpaRepository userJpaRepository;
+    @Autowired private InvestmentRoundJpaRepository investmentRoundJpaRepository;
+    @Autowired private WalletJpaRepository walletJpaRepository;
+    @Autowired private WalletBalanceJpaRepository walletBalanceJpaRepository;
+    @Autowired private OrderJpaRepository orderJpaRepository;
+    @Autowired private HoldingJpaRepository holdingJpaRepository;
 
-    @Autowired
-    private OrderJpaRepository orderJpaRepository;
-
-    @Autowired
-    private WalletBalanceJpaRepository walletBalanceJpaRepository;
-
-    @Autowired
-    private MockHoldingAdapter mockHoldingAdapter;
-
-    @MockitoBean
-    private ResolveExchangeCoinMappingUseCase resolveExchangeCoinMappingUseCase;
-
-    @MockitoBean
-    private FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
-
-    @MockitoBean
-    private FindExchangeDetailUseCase findExchangeDetailUseCase;
-
-    @MockitoBean
-    private GetWalletOwnerIdUseCase getWalletOwnerIdUseCase;
-
+    private Long exchangeCoinId;
+    private Long coinId;
+    private Long baseCurrencyCoinId;
     private final List<Long> walletIds = new ArrayList<>();
 
     @BeforeAll
     void setUpOnce() {
-        setupWallets();
+        setupReferenceData();
+        setupUsersAndWallets();
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 5, 10, 20, 50, 100, 150})
     @DisplayName("이벤트당 매칭 건수(N)별 처리 시간 측정")
     void measureProcessingTime(int n) {
-        setupMocks();
         List<Long> measurements = new ArrayList<>();
 
         for (int i = 0; i < WARMUP_ITERATIONS + MEASURE_ITERATIONS; i++) {
@@ -118,30 +114,53 @@ class PendingOrderMatchingLoadTest {
                 measurements.add(elapsedNanos);
             }
 
-            resetBalances();
+            resetAfterIteration(n);
         }
 
         printResult(n, measurements);
     }
 
-    private void setupMocks() {
-        given(resolveExchangeCoinMappingUseCase.resolve(EXCHANGE, SYMBOL))
-            .willReturn(Optional.of(EXCHANGE_COIN_ID));
-        given(findExchangeCoinMappingUseCase.findById(EXCHANGE_COIN_ID))
-            .willReturn(Optional.of(new ExchangeCoinMappingResult(EXCHANGE_COIN_ID, EXCHANGE_ID, COIN_ID)));
-        given(findExchangeDetailUseCase.findExchangeDetail(EXCHANGE_ID))
-            .willReturn(Optional.of(new ExchangeDetailResult("Upbit", BASE_CURRENCY_COIN_ID, true, FEE_RATE)));
-        given(getWalletOwnerIdUseCase.getWalletOwnerId(anyLong()))
-            .willReturn(1L);
+    private void setupReferenceData() {
+        CoinJpaEntity krw = coinJpaRepository.save(new CoinJpaEntity("KRW", "Korean Won"));
+        CoinJpaEntity btc = coinJpaRepository.save(new CoinJpaEntity("BTC", "Bitcoin"));
+        baseCurrencyCoinId = krw.getId();
+        coinId = btc.getId();
+
+        ExchangeJpaEntity upbit = exchangeJpaRepository.save(
+            new ExchangeJpaEntity(1L, "UPBIT", ExchangeMarketType.DOMESTIC, baseCurrencyCoinId, FEE_RATE));
+
+        ExchangeCoinJpaEntity exchangeCoin = exchangeCoinJpaRepository.save(
+            new ExchangeCoinJpaEntity(upbit.getId(), coinId, "BTC/KRW"));
+        exchangeCoinId = exchangeCoin.getId();
+
+        exchangeCoinMappingCacheCommandPort.loadAll(Map.of(
+            new ExchangeSymbolKey(EXCHANGE, SYMBOL),
+            new ExchangeCoinMapping(exchangeCoinId, upbit.getId(), coinId, "BTC")
+        ));
     }
 
-    private void setupWallets() {
+    private void setupUsersAndWallets() {
+        LocalDateTime now = LocalDateTime.now();
         BigDecimal largeBalance = new BigDecimal("1000000000");
+
         for (int i = 0; i < MAX_WALLETS; i++) {
-            long walletId = i + 1;
+            User user = User.reconstitute(null,
+                "loadtest" + i + "@test.com", "loadtest-user-" + i, false, now, now);
+            UserJpaEntity savedUser = userJpaRepository.save(UserJpaEntity.fromDomain(user));
+
+            InvestmentRound round = InvestmentRound.start(
+                savedUser.getId(), 0, largeBalance, BigDecimal.ZERO, now);
+            InvestmentRoundJpaEntity savedRound = investmentRoundJpaRepository.save(
+                InvestmentRoundJpaEntity.fromDomain(round));
+
+            Wallet wallet = Wallet.create(savedRound.getId(), 1L, largeBalance, now);
+            WalletJpaEntity savedWallet = walletJpaRepository.save(WalletJpaEntity.fromDomain(wallet));
+
             walletBalanceJpaRepository.save(
-                new WalletBalanceJpaEntity(walletId, BASE_CURRENCY_COIN_ID, BigDecimal.ZERO, largeBalance));
-            walletIds.add(walletId);
+                new WalletBalanceJpaEntity(savedWallet.getId(), baseCurrencyCoinId,
+                    BigDecimal.ZERO, largeBalance));
+
+            walletIds.add(savedWallet.getId());
         }
     }
 
@@ -154,13 +173,13 @@ class PendingOrderMatchingLoadTest {
             Long orderId = savePendingBuyOrder(walletId, amount, feeAmount);
 
             pendingOrderCacheCommandPort.add(
-                new PendingOrder(orderId, EXCHANGE_COIN_ID, Side.BUY, FILL_PRICE));
+                new PendingOrder(orderId, exchangeCoinId, Side.BUY, FILL_PRICE));
         }
     }
 
     private Long savePendingBuyOrder(Long walletId, BigDecimal amount, BigDecimal feeAmount) {
         Order order = Order.reconstitute(
-            null, "load-test-" + System.nanoTime(), walletId, EXCHANGE_COIN_ID,
+            null, "load-test-" + System.nanoTime(), walletId, exchangeCoinId,
             Side.BUY, OrderType.LIMIT,
             amount, new Quantity(ORDER_QUANTITY),
             FILL_PRICE, FILL_PRICE,
@@ -171,10 +190,11 @@ class PendingOrderMatchingLoadTest {
         return orderJpaRepository.save(entity).getId();
     }
 
-    private void resetBalances() {
+    private void resetAfterIteration(int n) {
         BigDecimal largeBalance = new BigDecimal("1000000000");
-        for (Long walletId : walletIds) {
-            walletBalanceJpaRepository.findByWalletIdAndCoinId(walletId, BASE_CURRENCY_COIN_ID)
+        for (int i = 0; i < Math.min(n, MAX_WALLETS); i++) {
+            Long walletId = walletIds.get(i);
+            walletBalanceJpaRepository.findByWalletIdAndCoinId(walletId, baseCurrencyCoinId)
                 .ifPresent(balance -> {
                     balance.updateFrom(
                         ksh.tryptobackend.wallet.domain.model.WalletBalance.builder()
@@ -186,8 +206,13 @@ class PendingOrderMatchingLoadTest {
                             .build());
                     walletBalanceJpaRepository.save(balance);
                 });
+
+            walletBalanceJpaRepository.findByWalletIdAndCoinId(walletId, coinId)
+                .ifPresent(walletBalanceJpaRepository::delete);
+
+            holdingJpaRepository.findByWalletIdAndCoinId(walletId, coinId)
+                .ifPresent(holdingJpaRepository::delete);
         }
-        mockHoldingAdapter.clear();
     }
 
     private void printResult(int n, List<Long> nanosMeasurements) {
