@@ -1,6 +1,5 @@
 package ksh.tryptobackend.trading.adapter.out.event;
 
-import ksh.tryptobackend.trading.adapter.out.PendingOrderRedisCommandAdapter;
 import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
 import ksh.tryptobackend.trading.domain.vo.OrderPlacedEvent;
 import ksh.tryptobackend.trading.domain.vo.PendingOrder;
@@ -14,7 +13,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class OrderPlacedPendingCacheUpdater {
 
     private final PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
-    private final PendingOrderRedisCommandAdapter pendingOrderRedisCommandAdapter;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderPlaced(OrderPlacedEvent event) {
@@ -25,6 +23,5 @@ public class OrderPlacedPendingCacheUpdater {
         PendingOrder pendingOrder =
             new PendingOrder(event.orderId(), event.exchangeCoinId(), event.side(), event.price());
         pendingOrderCacheCommandPort.add(pendingOrder);
-        pendingOrderRedisCommandAdapter.add(pendingOrder);
     }
 }

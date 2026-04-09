@@ -8,6 +8,7 @@ import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
 import ksh.tryptobackend.marketdata.adapter.out.repository.CoinJpaRepository;
 import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeCoinJpaRepository;
 import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
+import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
 import ksh.tryptobackend.trading.domain.vo.PendingOrder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PendingOrderRedisCommandAdapter {
+public class PendingOrderRedisCommandAdapter implements PendingOrderCacheCommandPort {
 
     private static final String KEY_PREFIX = "pending:orders:";
 
@@ -35,6 +36,7 @@ public class PendingOrderRedisCommandAdapter {
 
     private final ConcurrentMap<Long, String> keyPrefixCache = new ConcurrentHashMap<>();
 
+    @Override
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 100))
     public void add(PendingOrder pendingOrder) {
         String key = buildKey(pendingOrder.exchangeCoinId(), pendingOrder.side().name());
@@ -44,6 +46,7 @@ public class PendingOrderRedisCommandAdapter {
                 pendingOrder.price().doubleValue());
     }
 
+    @Override
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 100))
     public void remove(Long exchangeCoinId, Long orderId) {
         String keyPrefix = resolveKeyPrefix(exchangeCoinId);
@@ -51,6 +54,7 @@ public class PendingOrderRedisCommandAdapter {
         redisTemplate.opsForZSet().remove(keyPrefix + ":SELL", orderId.toString());
     }
 
+    @Override
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 100))
     public void addAll(List<PendingOrder> pendingOrders) {
         redisTemplate.executePipelined((RedisCallback<?>) connection -> {
