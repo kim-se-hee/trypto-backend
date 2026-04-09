@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.application.service;
 
+import ksh.tryptobackend.trading.adapter.out.PendingOrderRedisCommandAdapter;
 import ksh.tryptobackend.trading.application.port.in.WarmupPendingOrderMatchingUseCase;
 import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
 import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
@@ -16,12 +17,18 @@ import java.util.List;
 public class WarmupPendingOrderMatchingService implements WarmupPendingOrderMatchingUseCase {
 
     private final PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
+    private final PendingOrderRedisCommandAdapter pendingOrderRedisCommandAdapter;
     private final OrderQueryPort orderQueryPort;
 
     @Override
     public void warmup() {
         List<PendingOrder> pendingOrders = orderQueryPort.findAllPendingOrders();
         pendingOrderCacheCommandPort.addAll(pendingOrders);
+        try {
+            pendingOrderRedisCommandAdapter.addAll(pendingOrders);
+        } catch (Exception e) {
+            log.error("Redis 웜업 실패", e);
+        }
         log.info("미체결 주문 캐시 로딩 완료: {}건", pendingOrders.size());
     }
 }
