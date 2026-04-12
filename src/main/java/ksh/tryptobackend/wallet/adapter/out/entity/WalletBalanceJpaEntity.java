@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "wallet_balance")
+@Table(name = "wallet_balance",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"wallet_id", "coin_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class WalletBalanceJpaEntity {
