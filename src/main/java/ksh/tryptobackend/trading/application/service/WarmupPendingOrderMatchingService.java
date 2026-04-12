@@ -21,7 +21,11 @@ public class WarmupPendingOrderMatchingService implements WarmupPendingOrderMatc
     @Override
     public void warmup() {
         List<PendingOrder> pendingOrders = orderQueryPort.findAllPendingOrders();
-        pendingOrderCacheCommandPort.addAll(pendingOrders);
+        try {
+            pendingOrderCacheCommandPort.addAll(pendingOrders);
+        } catch (Exception e) {
+            log.error("Redis 웜업 실패", e);
+        }
         log.info("미체결 주문 캐시 로딩 완료: {}건", pendingOrders.size());
     }
 }

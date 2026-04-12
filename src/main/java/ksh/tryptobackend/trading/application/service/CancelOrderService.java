@@ -13,9 +13,11 @@ import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CancelOrderService implements CancelOrderUseCase {
@@ -37,12 +39,20 @@ public class CancelOrderService implements CancelOrderUseCase {
             return order;
         }
 
+        boolean cancelled = orderCommandPort.cancelOrder(command.orderId());
+        if (!cancelled) {
+            throw new CustomException(ErrorCode.ORDER_NOT_CANCELLABLE);
+        }
+
         order.cancel();
         unlockBalance(order);
-        Order savedOrder = orderCommandPort.save(order);
-        pendingOrderCacheCommandPort.remove(order.getExchangeCoinId(), order.getId());
+        try {
+            pendingOrderCacheCommandPort.remove(order.getExchangeCoinId(), order.getId());
+        } catch (Exception e) {
+            log.error("Redis ZREM 실패: orderId={}", order.getId(), e);
+        }
 
-        return savedOrder;
+        return order;
     }
 
     private Order getOrder(CancelOrderCommand command) {

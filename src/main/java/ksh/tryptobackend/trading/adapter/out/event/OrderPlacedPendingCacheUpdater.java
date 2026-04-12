@@ -20,7 +20,8 @@ public class OrderPlacedPendingCacheUpdater {
             return;
         }
 
-        pendingOrderCacheCommandPort.add(
-            new PendingOrder(event.orderId(), event.exchangeCoinId(), event.side(), event.price()));
+        PendingOrder pendingOrder =
+            new PendingOrder(event.orderId(), event.exchangeCoinId(), event.side(), event.price());
+        pendingOrderCacheCommandPort.add(pendingOrder);
     }
 }

@@ -19,7 +19,7 @@ model: sonnet
 
 # 역할
 
-너는 trypto-backend 프로젝트의 **프론트 UI 분석 전문가**다.
+너는 trypto-api 프로젝트의 **프론트 UI 분석 전문가**다.
 
 프론트엔드 페이지의 TSX 컴포넌트 + mock 데이터를 분석하여 백엔드에 필요한 API 요구사항을 도출한다. 프론트엔드는 `src/main/frontend/`에 React + Vite + TypeScript로 구성되어 있으며, mock 데이터 기반으로 8개 페이지가 완성되어 있다.
 

@@ -61,9 +61,8 @@ class TradingDataSeeder {
         int holdingCount = 0;
 
         orderCount += seedMainUserOrders(ctx);
-        holdingCount += seedMainUserHoldings(ctx);
         orderCount += seedBackgroundUserOrders(ctx);
-        holdingCount += seedBackgroundUserHoldings(ctx);
+        holdingCount += seedAllHoldings(ctx);
         seedOrderFillFailures(ctx);
 
         log.info("[Seed] 주문 {}건, 보유 {}건 생성 완료", orderCount, holdingCount);
@@ -177,7 +176,7 @@ class TradingDataSeeder {
                 side, orderType, amount, new Quantity(quantity),
                 orderType == OrderType.LIMIT ? orderPrice : null,
                 orderPrice, Fee.of(feeAmount, FEE_RATE), status,
-                null, createdAt, filledAt, violations
+                createdAt, filledAt, violations
             );
             orders.add(OrderJpaEntity.fromDomain(order));
         }
@@ -187,8 +186,8 @@ class TradingDataSeeder {
         return saved.size();
     }
 
-    private int seedMainUserHoldings(SeedContext ctx) {
-        return seedHoldingsForAllWallets(ctx, 1, 10);
+    private int seedAllHoldings(SeedContext ctx) {
+        return seedHoldingsForAllWallets(ctx);
     }
 
     private int seedBackgroundUserOrders(SeedContext ctx) {
@@ -209,11 +208,7 @@ class TradingDataSeeder {
         return totalCount;
     }
 
-    private int seedBackgroundUserHoldings(SeedContext ctx) {
-        return seedHoldingsForAllWallets(ctx, 11, 200);
-    }
-
-    private int seedHoldingsForAllWallets(SeedContext ctx, int fromUserIndex, int toUserIndex) {
+    private int seedHoldingsForAllWallets(SeedContext ctx) {
         List<HoldingJpaEntity> holdings = new ArrayList<>();
 
         for (var entry : ctx.walletIdsByRoundId.entrySet()) {
