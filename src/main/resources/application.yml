@@ -36,12 +36,29 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
     open-in-view: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:never}
+      data-locations: ${SQL_INIT_DATA_LOCATIONS:classpath:/db/no-op.sql}
+      continue-on-error: false
 
 influxdb:
   url: ${INFLUXDB_URL:http://localhost:8086}
   token: ${INFLUXDB_TOKEN:trypto-collector-token}
   org: ${INFLUXDB_ORG:trypto}
   bucket: ${INFLUXDB_BUCKET:ticker}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        match.queue.wait: true
+        match.fill.e2e: true
 
 app:
   websocket:
