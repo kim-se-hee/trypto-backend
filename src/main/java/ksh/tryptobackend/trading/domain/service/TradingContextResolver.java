@@ -9,6 +9,7 @@ import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderComma
 import ksh.tryptobackend.trading.domain.vo.OrderMode;
 import ksh.tryptobackend.trading.domain.vo.TradingContext;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
+import ksh.tryptobackend.wallet.application.port.in.GetWalletOwnerIdUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,8 @@ public class TradingContextResolver {
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final GetLivePriceUseCase getLivePriceUseCase;
 
+    private final GetWalletOwnerIdUseCase getWalletOwnerIdUseCase;
+
     private final Clock clock;
 
     public TradingContext resolve(PlaceOrderCommand cmd) {
@@ -36,7 +39,8 @@ public class TradingContextResolver {
 
         BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(cmd.exchangeCoinId());
         OrderMode mode = OrderMode.of(cmd.orderType(), cmd.side());
+        Long userId = getWalletOwnerIdUseCase.getWalletOwnerId(cmd.walletId());
 
-        return new TradingContext(mapping.coinId(), venue, mode, currentPrice, LocalDateTime.now(clock));
+        return new TradingContext(userId, mapping.coinId(), venue, mode, currentPrice, LocalDateTime.now(clock));
     }
 }

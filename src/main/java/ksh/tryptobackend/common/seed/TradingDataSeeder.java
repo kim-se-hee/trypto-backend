@@ -144,10 +144,14 @@ class TradingDataSeeder {
         List<OrderJpaEntity> orders = new ArrayList<>();
         int violationsAdded = 0;
 
+        String baseSymbol = "BINANCE".equals(exchangeName) ? "USDT" : "KRW";
+        Long baseCoinId = ctx.getCoinId(baseSymbol);
+
         for (int i = 0; i < orderCount; i++) {
             String coin = coins[i % coins.length];
             Long exchangeCoinId = ctx.getExchangeCoinId(exchangeName, coin);
             if (exchangeCoinId == null) continue;
+            Long coinId = ctx.getCoinId(coin);
 
             BigDecimal price = COIN_PRICES.getOrDefault(coin, new BigDecimal("10000"));
             BigDecimal variation = BigDecimal.ONE.add(
@@ -172,7 +176,7 @@ class TradingDataSeeder {
             }
 
             Order order = Order.reconstitute(
-                null, UUID.randomUUID().toString(), walletId, exchangeCoinId,
+                null, UUID.randomUUID().toString(), userId, walletId, exchangeCoinId, coinId, baseCoinId,
                 side, orderType, amount, new Quantity(quantity),
                 orderType == OrderType.LIMIT ? orderPrice : null,
                 orderPrice, Fee.of(feeAmount, FEE_RATE), status,

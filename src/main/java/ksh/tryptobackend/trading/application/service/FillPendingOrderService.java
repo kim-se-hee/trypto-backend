@@ -57,7 +57,7 @@ public class FillPendingOrderService implements FillPendingOrderUseCase {
         settleBalance(order, mapping, venue);
         updateHolding(order, mapping, currentPrice);
 
-        publishOrderFilledEvent(order, mapping);
+        publishOrderFilledEvent(order, mapping, currentPrice);
     }
 
     private ExchangeCoinMappingResult findExchangeCoinMapping(Long exchangeCoinId) {
@@ -103,13 +103,13 @@ public class FillPendingOrderService implements FillPendingOrderUseCase {
         holdingCommandPort.save(holding);
     }
 
-    private void publishOrderFilledEvent(Order order, ExchangeCoinMappingResult mapping) {
+    private void publishOrderFilledEvent(Order order, ExchangeCoinMappingResult mapping, BigDecimal currentPrice) {
         try {
             Long userId = getWalletOwnerIdUseCase.getWalletOwnerId(order.getWalletId());
             OrderFilledEvent event = new OrderFilledEvent(
                 userId, order.getWalletId(), order.getId(), mapping.coinId(),
-                order.getSide(), order.getQuantity().value(),
-                order.getFilledPrice(), order.getFee().amount());
+                order.getBaseCoinId(), order.getSide(), order.getQuantity().value(),
+                order.getFilledPrice(), currentPrice, order.getFee().amount());
             orderFilledEventPort.publish(event);
         } catch (Exception e) {
             log.warn("체결 이벤트 발행 실패: orderId={}", order.getId(), e);
