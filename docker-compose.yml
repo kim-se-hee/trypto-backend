@@ -198,8 +198,8 @@ services:
       retries: 40
       start_period: 120s
 
-  compensation:
-    image: ${COMPENSATION_IMAGE:-kimsehee98/trypto-compensation:v1}
+  scheduler:
+    image: ${SCHEDULER_IMAGE:-kimsehee98/trypto-scheduler:v1}
     pull_policy: always
     networks:
       - trypto-net
