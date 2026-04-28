@@ -132,8 +132,13 @@ erDiagram
     ORDERS {
         id order_id PK "주 식별자"
         string idempotency_key UK "멱등 키"
+        id user_id FK "주문 유저 ID"
         id wallet_id FK "주문 지갑 ID"
         id exchange_coin_id FK "거래소-코인 ID"
+        id coin_id FK "코인 ID (비정규화)"
+        id base_coin_id FK "기축통화 코인 ID (비정규화)"
+        string exchange_name "거래소명 (비정규화, tick 매칭용)"
+        string market_symbol "거래쌍 심볼 (비정규화, tick 매칭용)"
         string order_type "MARKET LIMIT"
         string side "BUY SELL"
         number order_amount "주문 금액"
@@ -307,4 +312,11 @@ erDiagram
     INVESTMENT_RULE ||--o{ RULE_IMPACT : ""
     INVESTMENT_RULE ||--o{ VIOLATION_DETAIL : ""
     COIN ||--o{ VIOLATION_DETAIL : ""
+
+    SHEDLOCK {
+        string name PK "락 이름 (스케줄러/배치 식별자)"
+        datetime lock_until "락 만료 시각"
+        datetime locked_at "락 획득 시각"
+        string locked_by "락 보유자 (인스턴스 식별자)"
+    }
 ```

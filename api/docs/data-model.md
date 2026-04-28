@@ -7,8 +7,8 @@
 | User | User | — | — |
 | Wallet | Wallet | WalletBalance, DepositAddress | DepositTargetExchange, WalletBalances |
 | Transfer | Transfer | — | TransferStatus, TransferType, TransferBalanceChange, TransferWallet |
-| Trading | Order, Holding, OrderFillFailure | RuleViolation | Side, OrderType, OrderStatus, OrderMode, Fee, Quantity, BalanceChange, OrderAmountPolicy, TradingVenue, RuleViolationRef, FilledOrder, FilledOrderCounts, CoinExchangeMapping, PendingOrder, ExchangeSymbolKey, OrderFilledEvent |
-| MarketData | Exchange, Coin, ExchangeCoin | ExchangeCoinChain, WithdrawalFee | ExchangeMarketType, CoinSymbols, DailyClosePrice, ExchangeCoinIdMap, ExchangeSummary, LivePrices |
+| Trading | Order, Holding, OrderFillFailure | RuleViolation | Side, OrderType, OrderStatus, OrderMode, Fee, Quantity, BalanceChange, OrderAmountPolicy, TradingVenue, RuleViolationRef, FilledOrder, FilledOrderCounts, CoinExchangeMapping, ExchangeSymbolKey, OrderFilledEvent, MarketIdentifier, OrphanOrder, PriceCandidate, PriceCandidates |
+| MarketData | Exchange, Coin, ExchangeCoin | ExchangeCoinChain, WithdrawalFee | ExchangeMarketType, CoinSymbols, DailyClosePrice, ExchangeCoinIdMap, ExchangeSummary, LivePrices, Tick |
 | Portfolio | PortfolioSnapshot | SnapshotDetail, EvaluatedHolding | ActiveRound, ActiveRounds, ExchangeSnapshot, KrwConversionRate, WalletSnapshot, WalletSnapshots, EvaluatedHoldings, PortfolioHolding, PortfolioHoldings, CoinSnapshot, CoinSnapshotMap, HoldingSnapshot, HoldingSummary, SnapshotOverview, UserSnapshotSummary |
 | Ranking | Ranking | — | RankingPeriod, RoundKey, RankingCandidate, RankingCandidates, EligibleRound, EligibleRounds, SnapshotSummary, SnapshotSummaries, RoundTradeCounts, ExchangeNames, CoinSymbols, RankingSummary, RankingStats |
 | InvestmentRound | InvestmentRound | RuleSetting, EmergencyFunding, DetectedViolation | RoundStatus, SeedAmountPolicy, SeedAllocation, SeedAllocations, SeedFundingSpec, RoundOverview, ViolationCheckContext, ViolationRule (sealed), ViolationRules |
@@ -21,7 +21,8 @@
 - WalletBalances → WalletBalance
 - Transfer → TransferBalanceChange
 - TradingVenue → OrderAmountPolicy
-- Order → RuleViolation
+- Order → RuleViolation, MarketIdentifier
+- PriceCandidates → PriceCandidate
 - ViolationRules → ViolationRule
 - PortfolioSnapshot → SnapshotDetail
 - EvaluatedHoldings → EvaluatedHolding
@@ -59,7 +60,7 @@
 | InvestmentRound → MarketData | FindExchangeDetailUseCase | 거래소 기축통화 확인 |
 | InvestmentRound → Wallet | CreateWalletWithBalanceUseCase, FindWalletUseCase, ManageWalletBalanceUseCase | 지갑 생성, 긴급 충전 시 지갑 조회·잔고 반영 |
 | Trading → Wallet | GetAvailableBalanceUseCase, ManageWalletBalanceUseCase, FindWalletUseCase | 잔고 검증·반영, walletId→roundId 조회 |
-| Trading → MarketData | GetLivePriceUseCase, FindExchangeDetailUseCase, FindExchangeCoinMappingUseCase | 시세 조회, 거래소-코인 매핑·수수료율 조회 |
+| Trading → MarketData | GetLivePriceUseCase, FindExchangeDetailUseCase, FindExchangeCoinMappingUseCase, FindTicksUseCase | 시세 조회, 거래소-코인 매핑·수수료율 조회, 누락 주문 보상용 tick 이력 조회 |
 | Trading → InvestmentRound | CheckRuleViolationsUseCase | 투자 원칙 위반 검증 |
 | Transfer → Wallet | FindWalletUseCase, GetAvailableBalanceUseCase, ManageWalletBalanceUseCase, GetWalletOwnerIdUseCase | 잔고 차감/추가, 지갑 소유자 확인 |
 | Transfer → InvestmentRound | FindRoundInfoUseCase | 송금 내역 조회 시 라운드 정보 |
