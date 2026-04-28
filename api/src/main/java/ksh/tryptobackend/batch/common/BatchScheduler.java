@@ -2,6 +2,7 @@ package ksh.tryptobackend.batch.common;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
@@ -30,6 +31,9 @@ public class BatchScheduler {
     private final TaskExecutor batchTaskExecutor;
 
     @Scheduled(cron = "0 59 23 * * *", zone = "Asia/Seoul")
+    @SchedulerLock(name = "daily-batch",
+                   lockAtMostFor = "PT4H",
+                   lockAtLeastFor = "PT5M")
     public void runDailyBatch() {
         LocalDate snapshotDate = LocalDate.now(KST);
         JobParameters params = new JobParametersBuilder()
