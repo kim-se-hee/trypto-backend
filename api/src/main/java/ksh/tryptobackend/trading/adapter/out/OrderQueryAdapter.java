@@ -12,7 +12,7 @@ import ksh.tryptobackend.trading.domain.vo.FilledOrder;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.FilledOrderCounts;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
-import ksh.tryptobackend.trading.domain.vo.PendingOrder;
+import ksh.tryptobackend.trading.domain.vo.OrphanOrder;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -31,13 +31,36 @@ public class OrderQueryAdapter implements OrderQueryPort {
     private final OrderJpaRepository orderJpaRepository;
 
     @Override
-    public List<PendingOrder> findAllPendingOrders() {
+    public List<OrphanOrder> findOrphanOrders(LocalDateTime threshold) {
         QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
         return queryFactory
-            .select(Projections.constructor(PendingOrder.class,
-                o.id, o.exchangeCoinId, o.side, o.price))
+            .select(Projections.constructor(OrphanOrder.class,
+                o.id, o.walletId, o.exchangeCoinId, o.coinId, o.baseCoinId,
+                o.exchangeName, o.marketSymbol,
+                o.side, o.price, o.quantity, o.amount, o.createdAt))
             .from(o)
-            .where(o.status.eq(OrderStatus.PENDING))
+            .where(
+                o.status.eq(OrderStatus.PENDING),
+                o.createdAt.lt(threshold),
+                o.price.isNotNull()
+            )
+            .fetch();
+    }
+
+    @Override
+    public List<FilledOrder> findFilledByWalletAndCoin(Long walletId, Long coinId) {
+        QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
+        return queryFactory
+            .select(Projections.constructor(FilledOrder.class,
+                o.id, o.walletId, o.exchangeCoinId, o.side,
+                o.amount, o.quantity, o.filledPrice, o.filledAt))
+            .from(o)
+            .where(
+                o.walletId.eq(walletId),
+                o.coinId.eq(coinId),
+                o.status.eq(OrderStatus.FILLED)
+            )
+            .orderBy(o.filledAt.asc(), o.id.asc())
             .fetch();
     }
 

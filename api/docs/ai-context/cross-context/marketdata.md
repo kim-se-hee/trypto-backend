@@ -35,6 +35,9 @@
 ### GetLivePricesUseCase
 - `getCurrentPrices(Set<Long> exchangeCoinIds) → Map<Long, BigDecimal>`
 
+### FindTicksUseCase
+- `findTicks(String exchangeName, String marketSymbol, Instant from, Instant to) → List<TickResult>`
+
 ### ResolveExchangeCoinMappingUseCase
 - `resolve(String exchange, String symbol) → Optional<Long>` (exchangeCoinId)
 
@@ -55,3 +58,4 @@
 | ExchangeCoinChainResult | tagRequired: boolean |
 | WithdrawalFeeResult | fee: BigDecimal, minWithdrawal: BigDecimal |
 | LiveTickerResult | exchangeId: Long, coinId: Long, symbol: String, price: BigDecimal, changeRate: BigDecimal, quoteTurnover: BigDecimal, timestamp: Long |
+| TickResult | time: Instant, price: BigDecimal |

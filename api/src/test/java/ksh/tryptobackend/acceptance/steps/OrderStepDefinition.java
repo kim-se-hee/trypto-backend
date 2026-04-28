@@ -67,6 +67,7 @@ public class OrderStepDefinition {
         walletBalanceJpaRepository.deleteAllInBatch();
         exchangeJpaRepository.deleteAllInBatch();
         jdbcTemplate.update("DELETE FROM exchange_coin");
+        jdbcTemplate.update("DELETE FROM coin");
         livePriceAdapter.clear();
         holdingAdapter.clear();
         priceChangeRateAdapter.clear();
@@ -77,6 +78,10 @@ public class OrderStepDefinition {
 
     @Given("업비트 거래소가 등록되어 있다")
     public void 업비트_거래소가_등록되어_있다() {
+        jdbcTemplate.execute(
+            "INSERT IGNORE INTO coin (coin_id, symbol, name) VALUES "
+                + "(" + KRW_COIN_ID + ", 'KRW', '원화'), "
+                + "(" + BTC_COIN_ID + ", 'BTC', '비트코인')");
         exchangeJpaRepository.save(new ExchangeJpaEntity(
             EXCHANGE_ID, "Upbit", ExchangeMarketType.DOMESTIC,
             KRW_COIN_ID, new BigDecimal("0.0005")));

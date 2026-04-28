@@ -39,6 +39,8 @@ dependencies {
     implementation 'com.influxdb:influxdb-client-java:7.2.0'
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.7.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.7.0'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -52,6 +54,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation platform('org.testcontainers:testcontainers-bom:1.20.4')
+    testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:mysql'
     testImplementation 'com.redis:testcontainers-redis:2.2.4'
     testImplementation 'org.testcontainers:rabbitmq'
