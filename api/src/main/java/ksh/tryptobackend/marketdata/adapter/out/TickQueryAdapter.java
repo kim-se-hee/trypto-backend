@@ -17,7 +17,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class InfluxTickQueryAdapter implements TickQueryPort {
+public class TickQueryAdapter implements TickQueryPort {
 
     private static final String MEASUREMENT = "ticker_raw";
     private static final String PRICE_FIELD = "price";
