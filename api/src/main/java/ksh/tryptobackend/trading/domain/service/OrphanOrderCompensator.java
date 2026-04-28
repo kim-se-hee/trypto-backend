@@ -1,9 +1,9 @@
-package ksh.tryptobackend.trading.application.service;
+package ksh.tryptobackend.trading.domain.service;
 
-import ksh.tryptobackend.marketdata.domain.vo.Tick;
 import ksh.tryptobackend.trading.application.port.in.RecalculateHoldingUseCase;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.domain.vo.OrphanOrder;
+import ksh.tryptobackend.trading.domain.vo.PriceCandidate;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,15 +26,15 @@ public class OrphanOrderCompensator {
     private final RecalculateHoldingUseCase recalculateHoldingUseCase;
 
     @Transactional
-    public boolean compensate(OrphanOrder orphan, Tick matchedTick) {
-        LocalDateTime filledAt = LocalDateTime.ofInstant(matchedTick.time(), KST);
-        boolean filled = orderCommandPort.fillOrder(orphan.orderId(), matchedTick.price(), filledAt);
+    public boolean compensate(OrphanOrder orphan, PriceCandidate match) {
+        LocalDateTime filledAt = LocalDateTime.ofInstant(match.time(), KST);
+        boolean filled = orderCommandPort.fillOrder(orphan.orderId(), match.price(), filledAt);
         if (!filled) {
             return false;
         }
         manageWalletBalanceUseCase.unlockBalance(orphan.walletId(), orphan.lockedCoinId(), orphan.lockedAmount());
         recalculateHoldingUseCase.recalculate(orphan.walletId(), orphan.coinId());
-        log.info("orphan {} 보상 완료 at {}", orphan.orderId(), matchedTick.price());
+        log.info("orphan {} 보상 완료 at {}", orphan.orderId(), match.price());
         return true;
     }
 }
