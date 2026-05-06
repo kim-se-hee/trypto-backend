@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { StompSubscription } from "@stomp/stompjs";
 import {
   connect,
   subscribeTickers,
@@ -52,24 +51,11 @@ export function useTickers({ exchangeId, initialCoins }: UseTickersOptions): Coi
       }
     };
 
-    let cancelled = false;
-    let subscription: StompSubscription | null = null;
-    let retryId: number | null = null;
-
-    const trySubscribe = () => {
-      if (cancelled) return;
-      subscription = subscribeTickers(exchangeId, onTicker);
-      if (!subscription) {
-        retryId = window.setTimeout(trySubscribe, 50);
-      }
-    };
-    trySubscribe();
+    const unsubscribe = subscribeTickers(exchangeId, onTicker);
 
     return () => {
-      cancelled = true;
-      if (retryId !== null) window.clearTimeout(retryId);
       if (rafId !== null) cancelAnimationFrame(rafId);
-      subscription?.unsubscribe();
+      unsubscribe();
       mergeCache.current.clear();
       setTickerMap(new Map());
     };

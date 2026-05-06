@@ -29,7 +29,60 @@ function resolveWsUrl(): string {
   return `${protocol}//${window.location.host}/ws`;
 }
 
+interface Subscriber {
+  topic: string;
+  handler: (body: string) => void;
+  subscription: StompSubscription | null;
+}
+
 let client: Client | null = null;
+let visibilityListenerAttached = false;
+let hiddenAt: number | null = null;
+const subscribers = new Set<Subscriber>();
+
+function activateSubscriber(sub: Subscriber): void {
+  if (!client?.connected) return;
+  if (sub.subscription) return;
+  sub.subscription = client.subscribe(sub.topic, (message) => {
+    sub.handler(message.body);
+  });
+}
+
+function invalidateSubscriptions(): void {
+  subscribers.forEach((sub) => {
+    sub.subscription = null;
+  });
+}
+
+function reactivateAllSubscribers(): void {
+  subscribers.forEach(activateSubscriber);
+}
+
+function forceReconnect(): void {
+  if (!client) return;
+  // 백오프가 길게 누적된 상태일 수 있으므로 즉시 재시도하도록 짧게 강제
+  client.reconnectDelay = 100;
+  void client.forceDisconnect();
+}
+
+function handleVisibilityChange(): void {
+  if (!client) return;
+  if (document.visibilityState === "hidden") {
+    hiddenAt = Date.now();
+    return;
+  }
+  const elapsed = hiddenAt ? Date.now() - hiddenAt : 0;
+  hiddenAt = null;
+  // heartbeat 간격(10s)의 2배 넘게 백그라운드였다면 서버가 이미 세션을 끊었을 가능성이 높다
+  // client.connected 만 보면 ERROR 프레임 처리 전이라 zombie 를 못 잡으므로 시간 기반으로 강제 재연결
+  if (elapsed > 20000 || !client.connected) {
+    if (client.active) {
+      forceReconnect();
+    } else {
+      client.activate();
+    }
+  }
+}
 
 export function connect(): void {
   if (client?.active) return;
@@ -42,11 +95,11 @@ export function connect(): void {
     connectionTimeout: 5000,
   });
 
-  // 지수 백오프 (1s → 30s)
   let reconnectAttempts = 0;
   const originalReconnectDelay = client.reconnectDelay;
 
   client.onWebSocketClose = () => {
+    invalidateSubscriptions();
     reconnectAttempts++;
     const delay = Math.min(originalReconnectDelay * Math.pow(2, reconnectAttempts), 30000);
     if (client) {
@@ -59,6 +112,7 @@ export function connect(): void {
     if (client) {
       client.reconnectDelay = originalReconnectDelay;
     }
+    reactivateAllSubscribers();
   };
 
   client.onStompError = (frame) => {
@@ -66,6 +120,11 @@ export function connect(): void {
   };
 
   client.activate();
+
+  if (!visibilityListenerAttached) {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    visibilityListenerAttached = true;
+  }
 }
 
 export function disconnect(): void {
@@ -73,38 +132,55 @@ export function disconnect(): void {
     void client.deactivate();
   }
   client = null;
+  subscribers.clear();
 }
 
 export function subscribeTickers(
   exchangeId: number,
   callback: (ticker: Ticker) => void,
-): StompSubscription | null {
-  if (!client?.connected) return null;
-
-  return client.subscribe(`/topic/tickers.${exchangeId}`, (message) => {
-    try {
-      const data = JSON.parse(message.body) as Ticker;
-      callback(data);
-    } catch {
-      // ignore parse errors
-    }
-  });
+): () => void {
+  const sub: Subscriber = {
+    topic: `/topic/tickers.${exchangeId}`,
+    handler: (body) => {
+      try {
+        callback(JSON.parse(body) as Ticker);
+      } catch {
+        // ignore parse errors
+      }
+    },
+    subscription: null,
+  };
+  subscribers.add(sub);
+  activateSubscriber(sub);
+  return () => {
+    subscribers.delete(sub);
+    sub.subscription?.unsubscribe();
+    sub.subscription = null;
+  };
 }
 
 export function subscribeUserEvents(
   userId: number,
   callback: (event: UserEvent) => void,
-): StompSubscription | null {
-  if (!client?.connected) return null;
-
-  return client.subscribe(`/user/${userId}/queue/events`, (message) => {
-    try {
-      const data = JSON.parse(message.body) as UserEvent;
-      callback(data);
-    } catch {
-      // ignore parse errors
-    }
-  });
+): () => void {
+  const sub: Subscriber = {
+    topic: `/user/${userId}/queue/events`,
+    handler: (body) => {
+      try {
+        callback(JSON.parse(body) as UserEvent);
+      } catch {
+        // ignore parse errors
+      }
+    },
+    subscription: null,
+  };
+  subscribers.add(sub);
+  activateSubscriber(sub);
+  return () => {
+    subscribers.delete(sub);
+    sub.subscription?.unsubscribe();
+    sub.subscription = null;
+  };
 }
 
 export function isConnected(): boolean {
