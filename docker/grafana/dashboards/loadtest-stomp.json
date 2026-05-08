@@ -1,0 +1,213 @@
+{
+  "title": "Loadtest — STOMP Ticker Pipeline",
+  "uid": "loadtest-stomp",
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": { "text": "Prometheus", "value": "Prometheus" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 100,
+      "title": "📥 부하 입력",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "id": 101,
+      "title": "동접 STOMP 세션 수",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "stomp_sessions_active", "legendFormat": "active sessions" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 102,
+      "title": "거래소별 시세 발행 rate (msg/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(loadtest_synthetic_ticker_published_total[30s])", "legendFormat": "{{exchange}}" },
+        { "expr": "sum(rate(loadtest_synthetic_ticker_published_total[30s]))", "legendFormat": "total" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "msg/s" } }
+    },
+
+    {
+      "id": 200,
+      "title": "🚦 큐 적체",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 }
+    },
+    {
+      "id": 201,
+      "title": "broker 큐 크기",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "stomp_broker_queue_size", "legendFormat": "broker" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 202,
+      "title": "clientInbound 큐 크기",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "stomp_clientInbound_queue_size", "legendFormat": "clientInbound" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 203,
+      "title": "clientOutbound 큐 크기",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "stomp_clientOutbound_queue_size", "legendFormat": "clientOutbound" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+
+    {
+      "id": 300,
+      "title": "💻 자원 (api JVM + 호스트)",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }
+    },
+    {
+      "id": 301,
+      "title": "api JVM heap 사용률",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "sum by (job) (jvm_memory_used_bytes{job=\"api\", area=\"heap\"}) / sum by (job) (jvm_memory_max_bytes{job=\"api\", area=\"heap\"})",
+          "legendFormat": "heap %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "min": 0 } }
+    },
+    {
+      "id": 302,
+      "title": "api GC pause (sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_sum{job=\"api\"}[1m])", "legendFormat": "{{action}} {{cause}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 303,
+      "title": "STOMP 채널 active threads",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "stomp_broker_active", "legendFormat": "broker" },
+        { "expr": "stomp_clientInbound_active", "legendFormat": "clientInbound" },
+        { "expr": "stomp_clientOutbound_active", "legendFormat": "clientOutbound" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 304,
+      "title": "호스트 TCP / fd",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "node_sockstat_TCP_inuse", "legendFormat": "TCP inuse" },
+        { "expr": "node_filefd_allocated", "legendFormat": "fd allocated" },
+        { "expr": "rate(node_netstat_Tcp_RetransSegs[1m])", "legendFormat": "TCP RetransSegs/s" },
+        { "expr": "rate(node_netstat_Tcp_OutRsts[1m])", "legendFormat": "TCP OutRsts/s" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 305,
+      "title": "api GC STW 횟수 (회/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_count{job=\"api\"}[1m])", "legendFormat": "{{action}} {{cause}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+
+    {
+      "id": 400,
+      "title": "👤 사용자 체감 (k6)",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 }
+    },
+    {
+      "id": 401,
+      "title": "메시지 e2e latency (ms) — collector 발행~브라우저 도착",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 33 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "histogram_quantile(0.5,  sum(rate(k6_message_e2e_latency_seconds[1m]))) * 1000", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(k6_message_e2e_latency_seconds[1m]))) * 1000", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(k6_message_e2e_latency_seconds[1m]))) * 1000", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 402,
+      "title": "끊김 (disconnects/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(k6_stomp_disconnects_total[1m])", "legendFormat": "disconnects/s" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 403,
+      "title": "연결 실패 (connect failures/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(k6_stomp_connect_failures_total[1m])", "legendFormat": "connect failures/s" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    },
+    {
+      "id": 404,
+      "title": "메시지 수신 (msg received/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 41 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "rate(k6_stomp_messages_received_total[1m])", "legendFormat": "msg received/s" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none" } }
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}
