@@ -10,15 +10,20 @@
 //   Bithumb  5% → /topic/tickers.2
 //   Binance  5% → /topic/tickers.3
 //
-// 측정값 (k6 결과):
-//   message_e2e_latency      : 서버 timestamp 박힘 → 클라 도착 시각 (ms)
+// 측정값 (k6 결과 — client 한계 시그널만 측정):
 //   stomp_disconnects        : VU 연결 끊김 누계 (heartbeat drift 감지용)
 //   stomp_connect_failures   : 초기 연결 실패 누계
 //   stomp_messages_received  : 받은 STOMP MESSAGE 누계 (부하 검증용)
+//
+// 서버 측 처리 시간 ("서버가 보내기 직전까지의 시간") 은 server-side metric 으로 본다 —
+//   stomp_clientOutbound_handle_duration_seconds (outbound channel 1건 처리 시간).
+// k6 측 e2e_latency 는 client 도달 시간이라 client 한계가 노이즈로 끼어 의미가 흐려져 제거.
+//
+// 메시지 받으면 JSON.parse 까지만 흉내내고 결과는 버림 (운영 client 의 CPU 부담 시늉).
 
 import http from 'k6/http';
 import { check, fail } from 'k6';
-import { Trend, Counter } from 'k6/metrics';
+import { Counter } from 'k6/metrics';
 import { WebSocket } from 'k6/experimental/websockets';
 import { setInterval, clearInterval, setTimeout } from 'k6/timers';
 import {
@@ -30,7 +35,6 @@ import {
   HEARTBEAT_FRAME,
 } from '../lib/stomp.js';
 
-const e2eLatency = new Trend('message_e2e_latency', true);
 const disconnects = new Counter('stomp_disconnects');
 const connectFailures = new Counter('stomp_connect_failures');
 const messagesReceived = new Counter('stomp_messages_received');
@@ -43,6 +47,13 @@ const TARGET_VU = parseInt(__ENV.TARGET_VU || '5000', 10);
 const PEAK_RATE_UPBIT = 217;
 const PEAK_RATE_BITHUMB = 12;
 const PEAK_RATE_BINANCE = 12;
+
+// 분산 모드: loadgen N대를 띄울 때 collector ramp 는 1대만 호출해야 한다.
+// (4대가 동시에 같은 endpoint 를 4번 POST 하면 마지막이 이기는 race 가 되고,
+//  정확히 같은 모양이라 무해하지만 의도가 흐려진다.)
+// orchestrator(skill) 가 첫 인스턴스만 RUN_RAMP_SETUP=true, 나머지는 false 로 띄운다.
+// 단일 인스턴스 단독 실행 시 default true 라 기존 동작과 동일.
+const RUN_RAMP_SETUP = (__ENV.RUN_RAMP_SETUP || 'true').toLowerCase() !== 'false';
 
 const RAMP_UP_DURATION = '10m';
 const SUSTAIN_DURATION = '10m';
@@ -64,7 +75,6 @@ export const options = {
     },
   },
   thresholds: {
-    'message_e2e_latency':   ['p(95)<200', 'p(99)<500'],
     'stomp_disconnects':     ['count<50'],
     'stomp_connect_failures':['count<50'],
   },
@@ -72,7 +82,13 @@ export const options = {
 
 // k6 setup() 은 테스트 시작 시 한 번 호출. collector 의 ramp 도 같은 모양으로 시작시킨다.
 // VU 의 ramp up 과 시세 발행 ramp 이 같은 시각에 출발하므로 비율 5000:241 이 자연스럽게 유지된다.
+//
+// 분산 모드에서는 RUN_RAMP_SETUP=false 인 인스턴스는 ramp POST 를 건너뛴다.
+// 시세 발행 rate 는 SUT 의 collector 1개가 들고 있으므로 N대로 곱하지 않는다.
 export function setup() {
+  if (!RUN_RAMP_SETUP) {
+    return { startedAt: Date.now() };
+  }
   const profile = {
     phases: [
       {
@@ -99,6 +115,9 @@ export function setup() {
 }
 
 export function teardown() {
+  if (!RUN_RAMP_SETUP) {
+    return;
+  }
   http.post(`http://${COLLECTOR_HOST}/loadtest/ticker/stop`);
 }
 
@@ -130,8 +149,10 @@ export function subscribeAndIdle() {
           try { ws.send(HEARTBEAT_FRAME); } catch (_) { /* close 직후 send 는 무시 */ }
         }, defaultConnectOptions().heartbeatSendMs);
       } else if (frame.command === 'MESSAGE') {
-        recordLatency(frame.body);
         messagesReceived.add(1);
+        // 운영 client 의 CPU 부담 시늉 — JSON.parse 까지만 흉내내고 결과는 버린다.
+        // server 처리 시간 자체는 server-side handle_duration metric 으로 본다.
+        consumeBody(frame.body);
       } else if (frame.command === 'ERROR') {
         // STOMP ERROR — 서버가 끊을 예정. 카운트만.
       }
@@ -173,18 +194,11 @@ export function subscribeAndIdle() {
   });
 }
 
-function recordLatency(body) {
+function consumeBody(body) {
   if (!body) return;
   try {
-    const obj = JSON.parse(body);
-    if (typeof obj.timestamp === 'number') {
-      const lat = Date.now() - obj.timestamp;
-      if (lat >= 0 && lat < 60_000) {
-        // 음수/거대값 = 시계 어긋남이거나 garbage. 트림.
-        e2eLatency.add(lat);
-      }
-    }
-  } catch (_) { /* JSON 파싱 실패는 카운트하지 않음 */ }
+    JSON.parse(body);
+  } catch (_) { /* 파싱 실패는 무시 — 운영 client 가 받았다 치는 동작만 흉내 */ }
 }
 
 function pickExchangeId() {
