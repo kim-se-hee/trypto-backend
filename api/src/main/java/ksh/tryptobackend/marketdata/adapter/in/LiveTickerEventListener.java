@@ -1,5 +1,6 @@
 package ksh.tryptobackend.marketdata.adapter.in;
 
+import java.util.Map;
 import ksh.tryptobackend.common.config.RabbitMqConfig;
 import ksh.tryptobackend.common.dto.messages.TickerMessage;
 import ksh.tryptobackend.marketdata.adapter.in.dto.response.TickerResponse;
@@ -54,6 +55,13 @@ public class LiveTickerEventListener {
                         result.changeRate(),
                         result.quoteTurnover(),
                         result.timestamp());
-        messagingTemplate.convertAndSend(TOPIC_PREFIX + result.exchangeId(), response);
+        // collector publish 시각을 헤더에 실어 보낸다.
+        // OutboundLatencyInterceptor 가 socket write 직전에 이 헤더를 읽어
+        // "수집기 publish → api outbound 직전" e2e 시간을 Timer 로 기록한다.
+        Map<String, Object> headers = Map.of(PUBLISHED_AT_MS_HEADER, result.timestamp());
+        messagingTemplate.convertAndSend(
+                TOPIC_PREFIX + result.exchangeId(), response, headers);
     }
+
+    public static final String PUBLISHED_AT_MS_HEADER = "publishedAtMs";
 }
