@@ -8,6 +8,7 @@ import ksh.tryptobackend.marketdata.adapter.in.LiveTickerEventListener;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ExecutorChannelInterceptor;
 
 public class OutboundLatencyInterceptor implements ExecutorChannelInterceptor {
@@ -44,12 +45,23 @@ public class OutboundLatencyInterceptor implements ExecutorChannelInterceptor {
     public Message<?> beforeHandle(
             Message<?> message, MessageChannel channel, MessageHandler handler) {
         START_NANOS.set(System.nanoTime());
-        Object publishedAt =
-                message.getHeaders().get(LiveTickerEventListener.PUBLISHED_AT_MS_HEADER);
-        if (publishedAt instanceof Long ts) {
-            long elapsed = System.currentTimeMillis() - ts;
-            if (elapsed >= 0) {
-                e2eTimer.record(elapsed, TimeUnit.MILLISECONDS);
+        // SimpMessagingTemplate.convertAndSend(dest, payload, Map) 는 Map 의 값을
+        // setNativeHeader(key, value.toString()) 로 변환해 native STOMP header 에 박는다.
+        // 그래서 일반 MessageHeaders.get() 으로는 안 잡히고 StompHeaderAccessor 의
+        // native header API 로 읽어야 Long 원본을 복원할 수 있다.
+        StompHeaderAccessor accessor =
+                StompHeaderAccessor.wrap(message);
+        String raw =
+                accessor.getFirstNativeHeader(LiveTickerEventListener.PUBLISHED_AT_MS_HEADER);
+        if (raw != null) {
+            try {
+                long ts = Long.parseLong(raw);
+                long elapsed = System.currentTimeMillis() - ts;
+                if (elapsed >= 0) {
+                    e2eTimer.record(elapsed, TimeUnit.MILLISECONDS);
+                }
+            } catch (NumberFormatException ignored) {
+                e2eHeaderMissing.increment();
             }
         } else {
             e2eHeaderMissing.increment();
