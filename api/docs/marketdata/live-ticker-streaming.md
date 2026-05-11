@@ -15,15 +15,17 @@
 - **marketdata**: `ticker.marketdata.{uuid}` 큐 → WebSocket 브로드캐스트
 - **trading**: `ticker.trading.{uuid}` 큐 → 미체결 주문 매칭
 
+큐 단위는 api 인스턴스다. RabbitMqConfig 가 @Bean 으로 anonymous 큐 1개를 선언하므로, fanout exchange 는 api 인스턴스 수만큼만 복제한다. 큐 이름의 {uuid} 는 인스턴스 부팅 시 1회 생성되어 다중 인스턴스 환경에서 이름이 충돌하지 않도록 한다.
+
 각 큐는 anonymous(exclusive, auto-delete)로 생성되어 서버 재시작 시 자동 정리된다.
 
 ## 메시지 흐름
 
 1. 시세 수집기가 거래소 WebSocket에서 티커를 수신한다
-2. RabbitMQ fanout exchange로 `TickerMessage`를 발행한다
-3. marketdata `LiveTickerEventListener`가 `ticker.marketdata.{uuid}` 큐에서 메시지를 소비한다
-4. `ResolveLiveTickerService`가 매핑 캐시에서 exchange+symbol → ExchangeCoinMapping을 조회하여 `LiveTickerResult`를 반환한다
-5. `LiveTickerEventListener`가 `TickerResponse`로 변환하여 `/topic/tickers.{exchangeId}`로 전송한다
+2. collector 의 `TickerEventConflator` 가 `(exchange, base, quote)` 별 slot 에 최신 1건만 유지하다 50ms 마다 거래소별로 묶어 RabbitMQ fanout exchange 로 `TickerBatchMessage` 1건을 발행한다 (= 1 메시지 / 1 거래소 / 50ms)
+3. marketdata `LiveTickerEventListener`가 `ticker.marketdata.{uuid}` 큐에서 batch 를 소비한다
+4. batch 안의 각 ticker 에 대해 `ResolveLiveTickerService`가 exchange+symbol → ExchangeCoinMapping 으로 `LiveTickerResult`를 반환한다
+5. `LiveTickerEventListener`가 resolve 결과들을 `List<TickerResponse>` 로 묶어 `/topic/tickers.{exchangeId}` 로 STOMP 1 프레임으로 전송한다
 
 ## 워밍업
 
@@ -37,36 +39,44 @@
 /topic/tickers.{exchangeId}
 ```
 
-- 거래소별 토픽으로, 해당 거래소의 모든 코인 티커 업데이트가 개별 메시지로 전달된다
+- 거래소별 토픽. 페이로드는 50ms 윈도우 안의 ticker 들을 묶은 **배열** 이다 — 클라이언트는 1 메시지를 받아 forEach 로 갱신한다
 - 클라이언트는 현재 보고 있는 거래소 토픽 1개만 구독한다
 - 거래소 탭 전환 시 기존 구독 해제 + 새 거래소 구독
 
 ## 메시지 포맷
 
-### TickerMessage (RabbitMQ 수신)
+### TickerBatchMessage (RabbitMQ 수신)
 
 ```json
 {
-  "exchange": "Upbit",
-  "symbol": "BTC/KRW",
-  "currentPrice": 143250000,
-  "changeRate": 0.0234,
-  "quoteTurnover": 892400000000,
-  "timestamp": 1709913600000
+  "exchange": "UPBIT",
+  "tickers": [
+    {
+      "symbol": "BTC/KRW",
+      "currentPrice": 143250000,
+      "changeRate": 0.0234,
+      "quoteTurnover": 892400000000,
+      "timestamp": 1709913600000
+    }
+  ]
 }
 ```
 
-### TickerResponse (WebSocket 전송)
+스키마 단일 소스는 [docs/contracts/ticker-exchange.md](../../../docs/contracts/ticker-exchange.md).
+
+### `List<TickerResponse>` (WebSocket 전송)
 
 ```json
-{
-  "coinId": 1,
-  "symbol": "BTC",
-  "price": 143250000,
-  "changeRate": 0.0234,
-  "quoteTurnover": 892400000000,
-  "timestamp": 1709913600000
-}
+[
+  {
+    "coinId": 1,
+    "symbol": "BTC",
+    "price": 143250000,
+    "changeRate": 0.0234,
+    "quoteTurnover": 892400000000,
+    "timestamp": 1709913600000
+  }
+]
 ```
 
 | 필드 | 타입 | 설명 |
