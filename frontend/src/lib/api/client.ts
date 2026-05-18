@@ -5,7 +5,7 @@
   type QueryParams,
 } from "./types";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 const SUCCESS_CODES = new Set(["SUCCESS", "CREATED"]);
 
 function toQueryString(query?: QueryParams): string {

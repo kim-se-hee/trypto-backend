@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  connect,
-  subscribeTickers,
-  isConnected,
-  type Ticker,
-} from "@/lib/api/websocket";
+import { subscribeTickers, type Ticker } from "@/lib/api/websocket";
 import type { CoinData } from "@/lib/types/coins";
 
 interface UseTickersOptions {
@@ -23,10 +18,6 @@ export function useTickers({ exchangeId, initialCoins }: UseTickersOptions): Coi
   const mergeCache = useRef<Map<string, MergeCacheEntry>>(new Map());
 
   useEffect(() => {
-    if (!isConnected()) {
-      connect();
-    }
-
     const pending = new Map<string, Ticker>();
     let rafId: number | null = null;
 
