@@ -54,6 +54,7 @@ tasks.named('test') {
 }
 
 jmh {
+    includes = ['MixedWorkloadBenchmark']
     warmupIterations = 2
     warmup = '2s'
     iterations = 3

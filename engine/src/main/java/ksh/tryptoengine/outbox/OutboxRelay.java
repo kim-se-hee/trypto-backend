@@ -41,7 +41,7 @@ public class OutboxRelay {
         this.rabbit = rabbit;
     }
 
-    @Scheduled(fixedDelay = 500)
+    @Scheduled(fixedDelayString = "${engine.outbox.relay-fixed-delay-ms:50}")
     public void relay() {
         List<Row> rows = jdbc.query(
             "SELECT id, payload FROM outbox WHERE sent_at IS NULL ORDER BY id LIMIT ?",

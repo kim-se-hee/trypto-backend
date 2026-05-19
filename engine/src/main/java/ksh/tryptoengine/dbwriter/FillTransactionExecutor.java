@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ksh.tryptoengine.matching.OrderDetail;
 import ksh.tryptoengine.dbwriter.FillCommand;
 import ksh.tryptoengine.outbox.OrderFilledEvent;
+import ksh.tryptoengine.outbox.OutboxPublisher;
 import ksh.tryptoengine.dbwriter.HoldingIncrementalUpdater;
 import ksh.tryptoengine.metrics.EngineMetrics;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +14,13 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,17 +36,20 @@ public class FillTransactionExecutor {
     private final HoldingIncrementalUpdater holdingUpdater;
     private final ObjectMapper objectMapper;
     private final EngineMetrics metrics;
+    private final OutboxPublisher outboxPublisher;
 
     public FillTransactionExecutor(
         JdbcTemplate jdbc,
         HoldingIncrementalUpdater holdingUpdater,
         @Qualifier("engineObjectMapper") ObjectMapper objectMapper,
-        EngineMetrics metrics
+        EngineMetrics metrics,
+        OutboxPublisher outboxPublisher
     ) {
         this.jdbc = jdbc;
         this.holdingUpdater = holdingUpdater;
         this.objectMapper = objectMapper;
         this.metrics = metrics;
+        this.outboxPublisher = outboxPublisher;
     }
 
     @Transactional
@@ -95,37 +103,62 @@ public class FillTransactionExecutor {
             }
         );
 
-        Timestamp createdAt = Timestamp.valueOf(LocalDateTime.now());
-        jdbc.batchUpdate(
-            "INSERT INTO outbox (event_type, payload, created_at) VALUES (?, ?, ?)",
-            new BatchPreparedStatementSetter() {
-                @Override
-                public void setValues(PreparedStatement ps, int i) throws SQLException {
-                    FillCommand cmd = succeeded.get(i);
-                    OrderDetail o = cmd.order();
-                    OrderFilledEvent event = new OrderFilledEvent(
-                        o.orderId(), o.userId(), cmd.executedPrice(), o.quantity(), cmd.executedAt()
-                    );
-                    String payload;
-                    try {
-                        payload = objectMapper.writeValueAsString(event);
-                    } catch (JsonProcessingException e) {
-                        throw new SQLException("outbox payload serialization failed", e);
-                    }
-                    ps.setString(1, ORDER_FILLED);
-                    ps.setString(2, payload);
-                    ps.setTimestamp(3, createdAt);
-                }
-
-                @Override
-                public int getBatchSize() {
-                    return succeeded.size();
-                }
+        List<OrderFilledEvent> events = new ArrayList<>(succeeded.size());
+        List<String> payloads = new ArrayList<>(succeeded.size());
+        for (FillCommand cmd : succeeded) {
+            OrderDetail o = cmd.order();
+            OrderFilledEvent event = new OrderFilledEvent(
+                o.orderId(), o.userId(), cmd.executedPrice(), o.quantity(), cmd.executedAt(), cmd.matchedAt()
+            );
+            events.add(event);
+            try {
+                payloads.add(objectMapper.writeValueAsString(event));
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("outbox payload serialization failed", e);
             }
-        );
+        }
+
+        Timestamp createdAt = Timestamp.valueOf(LocalDateTime.now());
+        List<Long> outboxIds = jdbc.execute((java.sql.Connection conn) -> {
+            try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO outbox (event_type, payload, created_at, matched_at) VALUES (?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS
+            )) {
+                for (int i = 0; i < payloads.size(); i++) {
+                    ps.setString(1, ORDER_FILLED);
+                    ps.setString(2, payloads.get(i));
+                    ps.setTimestamp(3, createdAt);
+                    ps.setTimestamp(4, Timestamp.valueOf(succeeded.get(i).matchedAt()));
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+                List<Long> ids = new ArrayList<>(payloads.size());
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    while (rs.next()) {
+                        ids.add(rs.getLong(1));
+                    }
+                }
+                return ids;
+            }
+        });
 
         holdingUpdater.apply(succeeded);
 
         metrics.matches().increment(succeeded.size());
+
+        if (outboxIds != null && outboxIds.size() == events.size()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    outboxPublisher.publishAsync(outboxIds, events);
+                }
+            });
+        } else {
+            log.warn(
+                "outbox generated key count mismatch ids={} events={}; polling will pick up",
+                outboxIds == null ? -1 : outboxIds.size(),
+                events.size()
+            );
+        }
     }
 }

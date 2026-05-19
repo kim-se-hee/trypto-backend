@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record FillCommand(
     OrderDetail order,
     BigDecimal executedPrice,
-    LocalDateTime executedAt
+    LocalDateTime executedAt,
+    LocalDateTime matchedAt
 ) {
 }
