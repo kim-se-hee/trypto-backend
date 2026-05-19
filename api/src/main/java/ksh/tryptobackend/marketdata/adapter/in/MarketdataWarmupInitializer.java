@@ -21,6 +21,9 @@ public class MarketdataWarmupInitializer {
     private final WarmupExchangeCoinMappingUseCase warmupExchangeCoinMappingUseCase;
     private final RabbitListenerEndpointRegistry rabbitListenerEndpointRegistry;
 
+    @Value("${app.market-meta-sync.enabled:true}")
+    private boolean syncEnabled;
+
     @Value("${app.market-meta-sync.max-retries:30}")
     private int maxRetries;
 
@@ -30,9 +33,13 @@ public class MarketdataWarmupInitializer {
     @Order(1)
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info("marketdata 초기화 시작");
+        log.info("marketdata 초기화 시작 (sync enabled={})", syncEnabled);
 
-        waitForMarketMetaSync();
+        if (syncEnabled) {
+            waitForMarketMetaSync();
+        } else {
+            log.info("market-meta-sync 비활성화됨 — sql.init 으로 시드된 DB 상태를 그대로 사용");
+        }
         warmupExchangeCoinMappingUseCase.warmup();
         startTickerListener();
 
