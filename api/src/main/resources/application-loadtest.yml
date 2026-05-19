@@ -1,0 +1,8 @@
+app:
+  market-meta-sync:
+    enabled: false
+
+spring:
+  sql:
+    init:
+      data-locations: classpath:/db/loadtest.sql

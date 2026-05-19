@@ -132,9 +132,11 @@ public class EngineThread {
         TradingPair pair = new TradingPair(exchangeCoinId);
         OrderBook book = orderBookRegistry.bookOf(pair);
         List<OrderDetail> triggered = book.sweep(e.tradePrice());
-        LocalDateTime ts = e.tickAt() != null ? e.tickAt() : LocalDateTime.now();
+        if (triggered.isEmpty()) return;
+        LocalDateTime matchedAt = LocalDateTime.now();
+        LocalDateTime ts = e.tickAt() != null ? e.tickAt() : matchedAt;
         for (OrderDetail o : triggered) {
-            FillCommand cmd = new FillCommand(o, e.tradePrice(), ts);
+            FillCommand cmd = new FillCommand(o, e.tradePrice(), ts, matchedAt);
             dbWriter.offer(cmd);
         }
     }

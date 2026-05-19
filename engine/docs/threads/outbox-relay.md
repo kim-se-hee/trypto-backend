@@ -7,7 +7,7 @@
 
 ## 1. 폴링 루프
 
-- `@Scheduled(fixedDelay = ${engine.outbox.relay-fixed-delay-ms:500})` 기본 500ms 주기
+- `@Scheduled(fixedDelayString = "${engine.outbox.relay-fixed-delay-ms:50}")` 기본 50ms 주기
 - 매 틱마다 `sent_at IS NULL`인 레코드를 최대 `${engine.outbox.relay-batch-size:256}`건 읽는다
 - 각 레코드를 fanout exchange로 `basicPublish(exchange, "", payload)` 호출
 - 발행 성공 레코드만 `UPDATE sent_at = now()`

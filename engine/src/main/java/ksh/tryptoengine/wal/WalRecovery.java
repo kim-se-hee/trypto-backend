@@ -124,9 +124,10 @@ public class WalRecovery {
                 if (ecId == null) return;
                 OrderBook book = registry.bookOf(new TradingPair(ecId));
                 List<OrderDetail> triggered = book.sweep(t.tradePrice());
-                LocalDateTime ts = t.tickAt() != null ? t.tickAt() : LocalDateTime.now();
+                LocalDateTime matchedAt = LocalDateTime.now();
+                LocalDateTime ts = t.tickAt() != null ? t.tickAt() : matchedAt;
                 for (OrderDetail o : triggered) {
-                    dbWriter.offer(new FillCommand(o, t.tradePrice(), ts));
+                    dbWriter.offer(new FillCommand(o, t.tradePrice(), ts, matchedAt));
                 }
             }
             default -> log.warn("unknown wal event type={} seq={}", rec.eventType(), rec.sequence());

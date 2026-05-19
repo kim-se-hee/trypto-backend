@@ -189,7 +189,7 @@ class HoldingIncrementalUpdaterTest {
             bd(price), bd(qty), BigDecimal.ZERO, 200L,
             LocalDateTime.of(2025, 1, 1, 0, 0)
         );
-        return new FillCommand(order, bd(price), LocalDateTime.of(2025, 1, 1, 0, 0));
+        return new FillCommand(order, bd(price), LocalDateTime.of(2025, 1, 1, 0, 0), LocalDateTime.of(2025, 1, 1, 0, 0));
     }
 
     private static BigDecimal bd(String v) {

@@ -48,6 +48,7 @@ engine:
     queue: engine.inbox
   outbox:
     fanout-exchange: order.filled.notification
+    relay-fixed-delay-ms: ${ENGINE_OUTBOX_RELAY_FIXED_DELAY_MS:50}
 
 management:
   endpoints:
