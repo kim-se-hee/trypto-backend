@@ -7,15 +7,16 @@
 **인수 테스트**
 - Cucumber를 이용하여 사용자 시나리오가 정상 작동하는지 검증한다
 - BR 한 개에 대해서 대표 시나리오 한 개를 작성한다. 같은 BR 의 boundary·내부 계산·입력 형식 검증 등 세부적인 테스트는 단위 테스트가 담당한다
-- `.feature` 파일 위치는 `src/test/resources/features/<도메인>/`. 첫 줄에 `# language: ko` 를 적고 한국어 Gherkin 키워드(`기능`, `시나리오`, `만일`, `그러면`, `그리고`)를 사용한다
+- `.feature` 파일 위치는 `src/test/resources/features/<도메인>/`. 한 파일 = 한 기능. 파일명은 docs 의 기능 명세와 동일하게 verb-noun (`place-order`, `find-candles`). 첫 줄에 `# language: ko` 를 적고 한국어 Gherkin 키워드(`기능`, `시나리오`, `만일`, `그러면`, `그리고`)를 사용한다
 - 시나리오는 spec.md 의 BR 번호와 매핑되도록 본문에 의도를 적는다
-- 같은 기능의 시나리오에는 모두 `@<feature>` 태그를 붙인다 (kebab-case, 예: `@place-order`). `/implement` 의 인수 테스트 러너가 이 태그로 새 기능 시나리오만 골라 실행한다
-- Step Definition 위치는 `src/test/java/.../acceptance/steps/<도메인>/`. 클래스명은 `{도메인}StepDefinition` 으로 작성한다. 줄임말(`StepDef`) 금지
+- Step Definition 위치는 `src/test/java/.../acceptance/steps/<도메인>/`. 클래스명은 `{기능}StepDefinition` 으로 작성한다. 줄임말(`StepDef`) 금지
 - Step Definition 애노테이션은 `io.cucumber.java.en` 패키지의 `@Given`, `@When`, `@Then`을 사용한다. 한글 애노테이션(`@먼저`, `@만일`, `@그러면`, `@그리고`) 사용 금지
 - API 호출은 모듈의 기존 클라이언트(예: `CommonApiClient`)를 생성자 주입으로 사용한다. 없으면 같은 패턴으로 새 메서드를 확장한다
 - 응답 검증은 모듈의 응답 래퍼(예: `ApiResponseDto`) 구조에 맞춰 JsonPath 로 검증한다
-- 테스트 간 격리를 위해 Cucumber `@Before`에서 데이터를 정리한다
-- 테스트 데이터 정리 시 `deleteAll()` 대신 `deleteAllInBatch()`를 사용한다
+- 마스터 데이터(코인·거래소·상장 코인 등)는 `src/main/resources/db/seed-data.sql` 로 적재한다. 매 시나리오마다 글로벌 `DatabaseCleanupHook` 이 모든 테이블을 TRUNCATE 후 seed 를 재적재해 격리한다 — StepDef 안에서 별도의 `@Before` 데이터 정리는 작성하지 않는다
+- 시나리오용 데이터(user·round·wallet 등)는 StepDef 의 Given 단계에서 생성한다. 같은 StepDef 안에서 여러 Given 이 동일 자원을 만들 수 있으므로 멱등(`ensureUserRoundWallet` 패턴)하게 작성한다
+- Testcontainers 컨테이너는 `.withReuse(true)` 로 띄운다. 로컬에 `~/.testcontainers.properties` 에 `testcontainers.reuse.enable=true` 를 추가하면 run 간에 컨테이너가 재사용되어 부팅 비용이 사라진다
+- 특정 기능만 돌릴 때는 `-Dcucumber.features=src/test/resources/features/<도메인>/<feature>.feature` 로 경로 지정. 도메인 전체는 디렉토리 경로로 지정한다
 
 **도메인 단위 테스트**
 - 비즈니스 로직이 복잡하거나 높은 정확성이 필요하여 빠른 피드백이 필요한 경우에만 작성한다
