@@ -11,7 +11,7 @@
 # 선행 구현 사항
 
 - 입금 주소 조회 API (`GET /api/wallets/{walletId}/deposit-address`) — `docs/wallet/deposit-address.md`
-- 잔고 관리 (available/locked) — `docs/trading/cex-order.md`
+- 잔고 관리 (available/locked) — `docs/trading/place-order.md`
 
 # 도메인 규칙
 

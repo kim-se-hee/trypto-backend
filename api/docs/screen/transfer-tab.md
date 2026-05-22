@@ -51,7 +51,7 @@
 | `GET /api/exchanges/{exchangeId}/coins` | [find-exchange-coins.md](../marketdata/find-exchange-coins.md) | 코인 심볼·이름 (캐싱) |
 | `GET /api/exchanges/{exchangeId}/coins/{coinId}/chains` | [find-coin-chains.md](../marketdata/find-coin-chains.md) | 체인 목록 (캐싱) |
 | `GET /api/users/{userId}/wallets/{walletId}/balances` | [wallet-assets.md](../wallet/wallet-assets.md) | 잔고 조회 |
-| `GET /api/withdrawal-fees` | [withdrawal-fee-api.md](../marketdata/withdrawal-fee-api.md) | 출금 수수료 (캐싱) |
+| `GET /api/withdrawal-fees` | [withdrawal-fee.md](../marketdata/withdrawal-fee.md) | 출금 수수료 (캐싱) |
 | `GET /api/wallets/{walletId}/deposit-address` | [deposit-address.md](../wallet/deposit-address.md) | 입금 주소 (캐싱) |
 | `POST /api/transfers` | [transfer.md](../transfer/transfer.md) | 송금 실행 |
 | `GET /api/wallets/{walletId}/transfers` | [transfer-history.md](../transfer/transfer-history.md) | 이체 내역 |
